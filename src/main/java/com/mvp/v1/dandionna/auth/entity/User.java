@@ -2,7 +2,8 @@ package com.mvp.v1.dandionna.auth.entity;
 
 import java.util.UUID;
 
-import com.mvp.v1.dandionna.common.entity.BaseEntity;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +13,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import com.mvp.v1.dandionna.common.entity.BaseEntity;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,7 +39,8 @@ public class User extends BaseEntity {
 	private String passwordHash;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "role", nullable = false)
+	@JdbcTypeCode(SqlTypes.NAMED_ENUM)
+	@Column(name = "role", nullable = false, columnDefinition = "user_role")
 	private UserRole role;
 
 	private User(String loginId, String passwordHash, UserRole role) {
