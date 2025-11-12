@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mvp.v1.dandionna.auth.dto.LoginRequest;
 import com.mvp.v1.dandionna.auth.dto.LoginResponse;
 import com.mvp.v1.dandionna.auth.dto.LogoutRequest;
+import com.mvp.v1.dandionna.auth.dto.RefreshTokenResponse;
 import com.mvp.v1.dandionna.auth.dto.SignUpRequest;
 import com.mvp.v1.dandionna.auth.dto.RefreshTokenRequest;
 import com.mvp.v1.dandionna.auth.service.AuthService;
@@ -54,9 +55,9 @@ public class AuthController {
 		return ApiResponse.ok("로그아웃되었습니다.");
 	}
 
-	@Operation(summary = "토큰 재발급", description = "유효한 리프레시 토큰으로 Access/Refresh 토큰을 재발급합니다.")
+	@Operation(summary = "토큰 재발급", description = "유효한 리프레시 토큰으로 Access 토큰을 재발급합니다.")
 	@PostMapping("/token/refresh")
-	public ResponseEntity<ApiResponse<LoginResponse>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+	public ResponseEntity<ApiResponse<RefreshTokenResponse>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
 		var response = authService.refresh(request);
 		return ApiResponse.ok(response);
 	}

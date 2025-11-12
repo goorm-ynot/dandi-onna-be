@@ -42,6 +42,7 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
+src/main/resources/Se/dnadi-onna-firebase-adminsdk-fbsvc-ee0a54d831.json
 ### IntelliJ IDEA ###
 .idea
 *.iws

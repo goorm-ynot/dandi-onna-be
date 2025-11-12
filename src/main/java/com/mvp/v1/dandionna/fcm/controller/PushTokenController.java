@@ -21,6 +21,7 @@ import jakarta.validation.Valid;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -33,6 +34,7 @@ public class PushTokenController {
 	private final PushTokenService pushTokenService;
 
 	@Operation(summary = "푸시 토큰 등록", description = "디바이스 별 FCM 토큰을 등록/갱신합니다.")
+	@SecurityRequirement(name = "bearerAuth")
 	@PostMapping("/tokens")
 	public ResponseEntity<ApiResponse<String>> register(@Valid @RequestBody PushTokenRegisterRequest request) {
 		UUID userId = currentUserId();

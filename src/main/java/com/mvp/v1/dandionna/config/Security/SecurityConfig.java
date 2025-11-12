@@ -33,16 +33,19 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http, JweTokenService tokens,
 		TokenBlacklistService blacklistService) throws Exception {
 		http
+			.cors(Customizer.withDefaults())
 			.csrf(csrf -> csrf.disable())
 			.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/v1/api/auth/**").permitAll()
-				.requestMatchers("/actuator/health").permitAll()
+				.requestMatchers("/actuator/health",
+					"/swagger-ui.html", "/swagger-ui/**",
+					"/v3/api-docs/**", "/api-docs/**").permitAll()
 				.requestMatchers(HttpMethod.GET, "/public/**").permitAll()
 				.anyRequest().authenticated()
 			)
 				.addFilterBefore(new JweAuthFilter(tokens, blacklistService), UsernamePasswordAuthenticationFilter.class)
-			.httpBasic(Customizer.withDefaults());
+			.httpBasic(httpBasic -> httpBasic.disable());
 
 		return http.build();
 	}
