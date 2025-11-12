@@ -37,16 +37,9 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 	private final AuthService authService;
 
-	@Operation(summary = "소비자 로그인", description = "소비자 계정으로 로그인합니다.")
-	@PostMapping("/consumer/login")
+	@Operation(summary = "소비자,사장님 로그인", description = "소비자,사장님 계정으로 로그인합니다.")
+	@PostMapping("/login")
 	public ResponseEntity<ApiResponse<LoginResponse>> consumerLogin(@Valid @RequestBody LoginRequest request) {
-		var response = authService.login(request);
-		return ApiResponse.ok(response);
-	}
-
-	@Operation(summary = "사장님 로그인", description = "사장님 계정으로 로그인합니다.")
-	@PostMapping("/owner/login")
-	public ResponseEntity<ApiResponse<LoginResponse>> ownerLogin(@Valid @RequestBody LoginRequest request) {
 		var response = authService.login(request);
 		return ApiResponse.ok(response);
 	}
