@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / Discussion
+    url: https://github.com/mvp/v1/dandi-onna-be/discussions
+    about: 질문이나 제안은 Discussions를 이용해 주세요.
