@@ -143,7 +143,6 @@ class AuthServiceTest {
 		when(tokenService.parseClaims(refreshToken)).thenReturn(claims);
 		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 		when(tokenService.issueAccessToken(any(), any())).thenReturn("new-access");
-		when(tokenService.issueRefreshToken(any())).thenReturn("new-refresh");
 
 		// when
 		RefreshTokenResponse response = authService.refresh(request);
