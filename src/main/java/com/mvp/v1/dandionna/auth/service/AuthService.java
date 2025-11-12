@@ -12,6 +12,7 @@ import com.mvp.v1.dandionna.auth.dto.LoginRequest;
 import com.mvp.v1.dandionna.auth.dto.LoginResponse;
 import com.mvp.v1.dandionna.auth.dto.LogoutRequest;
 import com.mvp.v1.dandionna.auth.dto.RefreshTokenRequest;
+import com.mvp.v1.dandionna.auth.dto.RefreshTokenResponse;
 import com.mvp.v1.dandionna.auth.dto.SignUpRequest;
 import com.mvp.v1.dandionna.auth.entity.User;
 import com.mvp.v1.dandionna.auth.repository.UserRepository;
@@ -75,7 +76,7 @@ public class AuthService {
 	}
 
 	@Transactional(readOnly = true)
-	public LoginResponse refresh(RefreshTokenRequest request) {
+	public RefreshTokenResponse refresh(RefreshTokenRequest request) {
 		String refreshToken = request.refreshToken();
 		if (blacklistService.isRefreshTokenBlacklisted(refreshToken)) {
 			throw new BusinessException(ErrorCode.AUTH_INVALID_TOKEN, "블랙리스트 처리된 리프레시 토큰입니다.");
@@ -92,8 +93,7 @@ public class AuthService {
 		}
 
 		String newAccess = tokenService.issueAccessToken(user.getId().toString(), user.getRole().name());
-		String newRefresh = tokenService.issueRefreshToken(user.getId().toString());
-		return LoginResponse.of(newAccess, newRefresh);
+		return RefreshTokenResponse.of(newAccess);
 	}
 
 	private Duration remainingTtl(String token) {

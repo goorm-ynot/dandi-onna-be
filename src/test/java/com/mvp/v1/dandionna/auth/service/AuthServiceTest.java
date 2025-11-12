@@ -27,6 +27,7 @@ import com.mvp.v1.dandionna.auth.dto.LoginRequest;
 import com.mvp.v1.dandionna.auth.dto.LoginResponse;
 import com.mvp.v1.dandionna.auth.dto.LogoutRequest;
 import com.mvp.v1.dandionna.auth.dto.RefreshTokenRequest;
+import com.mvp.v1.dandionna.auth.dto.RefreshTokenResponse;
 import com.mvp.v1.dandionna.auth.dto.SignUpRequest;
 import com.mvp.v1.dandionna.auth.entity.User;
 import com.mvp.v1.dandionna.auth.entity.UserRole;
@@ -142,14 +143,12 @@ class AuthServiceTest {
 		when(tokenService.parseClaims(refreshToken)).thenReturn(claims);
 		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 		when(tokenService.issueAccessToken(any(), any())).thenReturn("new-access");
-		when(tokenService.issueRefreshToken(any())).thenReturn("new-refresh");
 
 		// when
-		LoginResponse response = authService.refresh(request);
+		RefreshTokenResponse response = authService.refresh(request);
 
 		// then: 신규 토큰이 발급되고 기존 refresh 토큰은 블랙리스트 처리
 		assertThat(response.accessToken()).isEqualTo("new-access");
-		assertThat(response.refreshToken()).isEqualTo("new-refresh");
 		verify(blacklistService).blacklistRefreshToken(eq(refreshToken), any(Duration.class));
 	}
 

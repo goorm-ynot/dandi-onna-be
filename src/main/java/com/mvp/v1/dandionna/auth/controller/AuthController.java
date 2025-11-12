@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mvp.v1.dandionna.auth.dto.LoginRequest;
 import com.mvp.v1.dandionna.auth.dto.LoginResponse;
 import com.mvp.v1.dandionna.auth.dto.LogoutRequest;
+import com.mvp.v1.dandionna.auth.dto.RefreshTokenResponse;
 import com.mvp.v1.dandionna.auth.dto.SignUpRequest;
 import com.mvp.v1.dandionna.auth.dto.RefreshTokenRequest;
 import com.mvp.v1.dandionna.auth.service.AuthService;
@@ -37,16 +38,9 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 	private final AuthService authService;
 
-	@Operation(summary = "소비자 로그인", description = "소비자 계정으로 로그인합니다.")
-	@PostMapping("/consumer/login")
+	@Operation(summary = "소비자,사장님 로그인", description = "소비자,사장님 계정으로 로그인합니다.")
+	@PostMapping("/login")
 	public ResponseEntity<ApiResponse<LoginResponse>> consumerLogin(@Valid @RequestBody LoginRequest request) {
-		var response = authService.login(request);
-		return ApiResponse.ok(response);
-	}
-
-	@Operation(summary = "사장님 로그인", description = "사장님 계정으로 로그인합니다.")
-	@PostMapping("/owner/login")
-	public ResponseEntity<ApiResponse<LoginResponse>> ownerLogin(@Valid @RequestBody LoginRequest request) {
 		var response = authService.login(request);
 		return ApiResponse.ok(response);
 	}
@@ -61,9 +55,9 @@ public class AuthController {
 		return ApiResponse.ok("로그아웃되었습니다.");
 	}
 
-	@Operation(summary = "토큰 재발급", description = "유효한 리프레시 토큰으로 Access/Refresh 토큰을 재발급합니다.")
+	@Operation(summary = "토큰 재발급", description = "유효한 리프레시 토큰으로 Access 토큰을 재발급합니다.")
 	@PostMapping("/token/refresh")
-	public ResponseEntity<ApiResponse<LoginResponse>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+	public ResponseEntity<ApiResponse<RefreshTokenResponse>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
 		var response = authService.refresh(request);
 		return ApiResponse.ok(response);
 	}
