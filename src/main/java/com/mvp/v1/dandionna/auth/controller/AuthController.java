@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
  * @author rua
  */
 @RestController
-@RequestMapping("/v1/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 @Tag(name = "Auth API", description = "사용자 로그인 관리 API")
 @Validated

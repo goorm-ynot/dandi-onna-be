@@ -25,7 +25,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/v1/api/push")
+@RequestMapping("/api/v1/push")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Push API", description = "푸시 토큰 등록 API")

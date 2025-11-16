@@ -17,11 +17,14 @@ import com.mvp.v1.dandionna.s3.dto.UploadTarget;
 
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
@@ -63,9 +66,32 @@ public class UploadService {
 		);
 	}
 
+	public PresignedUrlResponse presignDownload(String key) {
+		if (!StringUtils.hasText(key)) {
+			throw new BusinessException(ErrorCode.NOT_FOUND, "등록된 이미지가 없습니다.");
+		}
+		GetObjectRequest objectRequest = GetObjectRequest.builder()
+			.bucket(bucket)
+			.key(key)
+			.build();
+
+		GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+			.signatureDuration(Duration.ofSeconds(presignTtlSeconds))
+			.getObjectRequest(objectRequest)
+			.build();
+
+		PresignedGetObjectRequest presigned = presigner.presignGetObject(presignRequest);
+
+		return new PresignedUrlResponse(
+			presigned.url().toString(),
+			key,
+			presignTtlSeconds
+		);
+	}
+
 	public S3Metadata confirm(UploadTarget target, String referenceId, UploadConfirmRequest request) {
 		// 1. 경로 검증
-		String expectedPrefix = target.name().toLowerCase() + "/" + referenceId;
+		String expectedPrefix = folderFor(target) + "/" + sanitize(referenceId);
 		if (!request.key().startsWith(expectedPrefix)) {
 			throw new BusinessException(ErrorCode.BAD_REQUEST, "경로 불일치");
 		}
@@ -85,7 +111,7 @@ public class UploadService {
 			if (metadata.contentLength() == 0) {
 				throw new BusinessException(ErrorCode.BAD_REQUEST, "빈 파일");
 			}
-			return new S3Metadata(request.key(),s3Etag,metadata.contentType());
+			return new S3Metadata(request.key(), s3Etag, metadata.contentType());
 		} catch (NoSuchKeyException e) {
 			throw new BusinessException(ErrorCode.NOT_FOUND, "S3에 파일 없음");
 		}
@@ -104,11 +130,7 @@ public class UploadService {
 	}
 
 	private String buildObjectKey(UploadTarget target, String referenceId, String fileName) {
-		String folder = folderFor(target);
-		String sanitizedRef = sanitize(referenceId);
-		String extension = extractExtension(fileName);
-		String randomName = UUID.randomUUID().toString();
-		return "%s/%s/%s%s".formatted(folder, sanitizedRef, randomName, extension);
+		return target.generateKey(referenceId, fileName);
 	}
 
 	private String folderFor(UploadTarget target) {
