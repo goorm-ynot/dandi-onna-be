@@ -272,6 +272,20 @@
       <button id="consumer-posts-btn" class="secondary">노쇼 글 조회</button>
       <pre id="consumer-posts-result"></pre>
     </section>
+
+    <section>
+      <h2>즐겨찾기 관리 (/api/v1/favorites)</h2>
+      <form id="favorite-form" class="row">
+        <label>매장 ID
+          <input name="storeId" placeholder="UUID" required>
+        </label>
+      </form>
+      <div class="flex">
+        <button id="favorite-add-btn" class="secondary">즐겨찾기 추가</button>
+        <button id="favorite-remove-btn" class="secondary">즐겨찾기 삭제</button>
+      </div>
+      <pre id="favorite-result"></pre>
+    </section>
   </div>
 
   <div id="tab-store" class="tab-panel active">
@@ -776,6 +790,8 @@
     document.getElementById("consumer-home-btn").addEventListener("click", handleConsumerHome);
     document.getElementById("consumer-store-btn").addEventListener("click", handleConsumerStores);
     document.getElementById("consumer-posts-btn").addEventListener("click", handleConsumerStorePosts);
+    document.getElementById("favorite-add-btn").addEventListener("click", () => handleFavorite("POST"));
+    document.getElementById("favorite-remove-btn").addEventListener("click", () => handleFavorite("DELETE"));
     addNoshowItem();
 
     async function handleFetch(event) {
@@ -1410,6 +1426,29 @@ async function loadStoreImage() {
       } catch (err) {
         appendLog("매장 노쇼 글 조회 실패", { error: err.message });
         document.getElementById("consumer-posts-result").textContent = err.message;
+      }
+    }
+
+    async function handleFavorite(method) {
+      const form = document.getElementById("favorite-form");
+      const storeId = form.storeId.value.trim();
+      if (!storeId) {
+        appendLog("즐겨찾기 요청에 매장 ID가 필요합니다.");
+        return;
+      }
+      try {
+        appendLog(`즐겨찾기 ${method === "POST" ? "추가" : "삭제"} 요청`, { storeId });
+        const res = await fetch(`${state.baseUrl}/api/v1/favorites`, {
+          method,
+          headers: consumerHeaders(),
+          body: JSON.stringify({ storeId })
+        });
+        const body = await res.json();
+        document.getElementById("favorite-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("즐겨찾기 응답", body);
+      } catch (err) {
+        appendLog("즐겨찾기 요청 실패", { error: err.message });
+        document.getElementById("favorite-result").textContent = err.message;
       }
     }
   </script>
