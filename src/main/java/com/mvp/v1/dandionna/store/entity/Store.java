@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.locationtech.jts.geom.Point;
 
 import com.mvp.v1.dandionna.common.entity.BaseEntity;
 
@@ -17,6 +18,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.locationtech.jts.geom.Point;
 
 @Entity
 @Table(name = "stores")
@@ -47,6 +49,9 @@ public class Store extends BaseEntity {
     @Column(nullable = false)
     private BigDecimal lon;
 
+    @Column(columnDefinition = "geometry(Point, 4326)", nullable = false)
+    private Point geom;
+
     @Column(name = "open_time", nullable = false)
     private LocalTime openTime;
 
@@ -74,7 +79,7 @@ public class Store extends BaseEntity {
     }
 
 	private Store(UUID ownerUserId, String name, String category, String phone, String addressRoad,
-		BigDecimal lat, BigDecimal lon, LocalTime openTime, LocalTime closeTime,
+		BigDecimal lat, BigDecimal lon, Point geom, LocalTime openTime, LocalTime closeTime,
 		String description, String imageKey, String imageMime, String imageEtag, ImageStatus imageStatus) {
         this.ownerUserId = ownerUserId;
         this.name = name;
@@ -83,6 +88,7 @@ public class Store extends BaseEntity {
         this.addressRoad = addressRoad;
         this.lat = lat;
         this.lon = lon;
+        this.geom = geom;
         this.openTime = openTime;
         this.closeTime = closeTime;
         this.description = description;
@@ -95,9 +101,9 @@ public class Store extends BaseEntity {
     }
 
 	public static Store create(UUID ownerUserId, String name, String category, String phone, String addressRoad,
-        BigDecimal lat, BigDecimal lon, LocalTime openTime, LocalTime closeTime, String description,
+        BigDecimal lat, BigDecimal lon, Point geom, LocalTime openTime, LocalTime closeTime, String description,
         String imageKey, String imageMime, String imageEtag, ImageStatus imageStatus) {
-        return new Store(ownerUserId, name, category, phone, addressRoad, lat, lon, openTime, closeTime, description,
+        return new Store(ownerUserId, name, category, phone, addressRoad, lat, lon, geom, openTime, closeTime, description,
             imageKey, imageMime, imageEtag, imageStatus);
     }
 
@@ -133,6 +139,10 @@ public class Store extends BaseEntity {
         return lon;
     }
 
+    public Point getGeom() {
+        return geom;
+    }
+
     public LocalTime getOpenTime() {
         return openTime;
     }
@@ -162,13 +172,14 @@ public class Store extends BaseEntity {
     }
 
 	public void update(String name, String category, String phone, String addressRoad,
-		BigDecimal lat, BigDecimal lon, LocalTime openTime, LocalTime closeTime, String description) {
+		BigDecimal lat, BigDecimal lon, Point geom, LocalTime openTime, LocalTime closeTime, String description) {
 		this.name = name;
 		this.category = category;
 		this.phone = phone;
 		this.addressRoad = addressRoad;
 		this.lat = lat;
 		this.lon = lon;
+        this.geom = geom;
 		this.openTime = openTime;
 		this.closeTime = closeTime;
         this.description = description;

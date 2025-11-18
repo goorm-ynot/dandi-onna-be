@@ -7,7 +7,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +17,6 @@ import com.mvp.v1.dandionna.common.service.SecurityUtils;
 import com.mvp.v1.dandionna.store.dto.StoreCreateRequest;
 import com.mvp.v1.dandionna.store.dto.StoreResponse;
 import com.mvp.v1.dandionna.store.dto.StoreUpdateRequest;
-import com.mvp.v1.dandionna.store.service.StorePermissionService;
 import com.mvp.v1.dandionna.store.service.StoreService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,13 +25,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/v1/api/stores")
+@RequestMapping("/api/v1/stores")
 @Validated
 @RequiredArgsConstructor
 public class StoreController {
 
     private final StoreService storeService;
-    private final StorePermissionService storePermissionService;
 
     @Operation(summary = "가게 정보 등록")
     @SecurityRequirement(name = "bearerAuth")
@@ -46,33 +43,30 @@ public class StoreController {
 
     @Operation(summary = "가게 정보 수정")
     @SecurityRequirement(name = "bearerAuth")
-    @PatchMapping("/{storeId}")
+    @PatchMapping
     public ResponseEntity<ApiResponse<StoreResponse>> update(
-        @PathVariable UUID storeId,
         @Valid @RequestBody StoreUpdateRequest request) {
         UUID ownerId = SecurityUtils.getCurrentUserId();
-        storePermissionService.verifyOwner(ownerId, storeId);
-        StoreResponse response = storeService.updateStore(ownerId, storeId, request);
+        StoreResponse response = storeService.updateStore(ownerId, request);
         return ApiResponse.ok(response);
     }
 
 	//관리자용
     @Operation(summary = "가게 정보 삭제")
     @SecurityRequirement(name = "bearerAuth")
-    @DeleteMapping("/{storeId}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID storeId) {
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> delete() {
         UUID ownerId = SecurityUtils.getCurrentUserId();
-        storePermissionService.verifyOwner(ownerId, storeId);
-        storeService.deleteStore(ownerId, storeId);
+        storeService.deleteStore(ownerId);
         return ApiResponse.ok(null);
     }
 
     @Operation(summary = "가게 정보 조회")
     @SecurityRequirement(name = "bearerAuth")
-    @GetMapping("/{storeId}")
-    public ResponseEntity<ApiResponse<StoreResponse>> get(@PathVariable UUID storeId) {
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<StoreResponse>> get() {
         UUID ownerId = SecurityUtils.getCurrentUserId();
-        StoreResponse response = storeService.getStoreForOwner(ownerId, storeId);
+        StoreResponse response = storeService.getStoreForOwner(ownerId);
         return ApiResponse.ok(response);
     }
 }

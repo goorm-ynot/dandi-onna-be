@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPost;
+import com.mvp.v1.dandionna.noshow_post.entity.NoShowPostStatus;
 
 import jakarta.persistence.LockModeType;
 
@@ -25,5 +26,13 @@ public interface NoShowPostRepository extends JpaRepository<NoShowPost, Long> {
 		@Param("expireAt") OffsetDateTime expireAt
 	);
 
-	Page<NoShowPost> findByStoreIdAndExpireAtBetween(UUID storeId, OffsetDateTime start, OffsetDateTime end, Pageable pageable);
+	Page<NoShowPost> findByStoreIdAndExpireAtBetween(UUID storeId, OffsetDateTime start, OffsetDateTime end,
+		Pageable pageable);
+
+	Page<NoShowPost> findByStoreIdAndStatusAndExpireAtAfterAndDeletedAtIsNullOrderByExpireAtAsc(
+		UUID storeId,
+		NoShowPostStatus status,
+		OffsetDateTime now,
+		Pageable pageable
+	);
 }

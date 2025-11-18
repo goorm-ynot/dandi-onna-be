@@ -37,7 +37,7 @@ public class NoShowPost extends BaseEntity {
 	@Column(name = "price_percent", nullable = false)
 	private int pricePercent;
 
-	@Column(name = "price_krw", nullable = false)
+	@Column(name = "discounted_unit_price", nullable = false)
 	private int discountedUnitPrice;
 
 	@Column(name = "original_unit_price")

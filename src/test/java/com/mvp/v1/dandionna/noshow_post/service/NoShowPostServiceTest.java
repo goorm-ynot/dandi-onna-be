@@ -39,10 +39,14 @@ import com.mvp.v1.dandionna.noshow_post.repository.NoShowPostRepository;
 import com.mvp.v1.dandionna.store.entity.Store;
 import com.mvp.v1.dandionna.store.entity.ImageStatus;
 import com.mvp.v1.dandionna.store.repository.StoreRepository;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 
 @ExtendWith(MockitoExtension.class)
 class NoShowPostServiceTest {
 
+	private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(), 4326);
 	@Mock
 	private StoreRepository storeRepository;
 	@Mock
@@ -162,6 +166,7 @@ class NoShowPostServiceTest {
 	}
 
 	private Store createStore(UUID storeId, UUID ownerId, LocalTime open, LocalTime close) {
+		Point geom = GEOMETRY_FACTORY.createPoint(new org.locationtech.jts.geom.Coordinate(1.0, 1.0));
 		Store store = Store.create(
 			ownerId,
 			"테스트매장",
@@ -170,6 +175,7 @@ class NoShowPostServiceTest {
 			"서울시 어딘가",
 			BigDecimal.ONE,
 			BigDecimal.ONE,
+			geom,
 			open,
 			close,
 			"설명",
@@ -183,11 +189,8 @@ class NoShowPostServiceTest {
 	}
 
 	private Menu createMenu(UUID menuId, UUID storeId, String name, int price) {
-		Menu menu = new Menu();
+		Menu menu = Menu.create(storeId, name, "설명", price, null, null, null, ImageStatus.pending);
 		ReflectionTestUtils.setField(menu, "id", menuId);
-		ReflectionTestUtils.setField(menu, "storeId", storeId);
-		ReflectionTestUtils.setField(menu, "name", name);
-		ReflectionTestUtils.setField(menu, "priceKrw", price);
 		return menu;
 	}
 

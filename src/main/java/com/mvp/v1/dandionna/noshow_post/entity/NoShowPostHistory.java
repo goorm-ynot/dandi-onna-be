@@ -3,6 +3,9 @@ package com.mvp.v1.dandionna.noshow_post.entity;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.mvp.v1.dandionna.common.entity.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -53,7 +56,8 @@ public class NoShowPostHistory extends BaseEntity {
 	private OffsetDateTime expireAt;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "status", nullable = false)
+	@JdbcTypeCode(SqlTypes.NAMED_ENUM)
+	@Column(name = "status", columnDefinition = "no_show_post_status", nullable = false)
 	private NoShowPostStatus status;
 
 	@Column(name = "replaced_at", nullable = false)

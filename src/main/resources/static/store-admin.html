@@ -101,9 +101,97 @@
       border-radius: 8px;
       border: 1px solid #2a2f36;
     }
+    #menu-display {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .menu-card {
+      border: 1px solid #2a2f36;
+      border-radius: 12px;
+      padding: 16px;
+      background: #141820;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .menu-card-image {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #0f1318;
+      border: 1px solid #2a2f36;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      overflow: hidden;
+    }
+    .menu-card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .menu-card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+    .menu-card-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: #cdd5f5;
+    }
+    .menu-card-desc {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      white-space: pre-wrap;
+    }
     .hint {
       font-size: 0.85rem;
       color: #a0aec0;
+    }
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .tab-button {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #2a2f36;
+      background: #1f2430;
+      color: #cbd5f5;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .tab-button.active {
+      background: #4f7df0;
+      border-color: #4f7df0;
+      color: #fff;
+    }
+    .tab-panel {
+      display: none;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+    .noshow-item-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #2a2f36;
+      border-radius: 10px;
+      padding: 12px;
+      background: #1a1f26;
+    }
+    .noshow-item-row button {
+      align-self: end;
+      height: 42px;
     }
     hr {
       border: none;
@@ -118,6 +206,75 @@
     <p class="hint">Access Token으로 인증되는 사장 전용 API를 바로 호출할 수 있는 도구입니다.</p>
   </header>
 
+  <div class="tab-bar">
+    <button class="tab-button active" data-target="tab-store">매장 · 메뉴 관리</button>
+    <button class="tab-button" data-target="tab-noshow">노쇼 글 생성</button>
+    <button class="tab-button" data-target="tab-consumer">소비자 홈 테스트</button>
+  </div>
+
+  <div id="tab-consumer" class="tab-panel">
+    <section>
+      <h2>소비자 인증</h2>
+      <p class="hint">소비자 전용 API 호출 시 사용할 Access Token과 Base URL을 등록하세요.</p>
+      <div class="row">
+        <label>
+          API Base URL
+          <input id="consumer-base-url" placeholder="http://localhost:8080">
+        </label>
+        <label>
+          소비자 Access Token (Bearer)
+          <input id="consumer-token" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." autocomplete="off">
+        </label>
+      </div>
+      <button id="consumer-token-apply" type="button" class="secondary">소비자 설정 저장</button>
+    </section>
+
+    <section>
+      <h2>소비자 홈 (/api/v1/home)</h2>
+      <p class="hint">현재 소비자 토큰으로 오늘 주문 정보를 조회합니다.</p>
+      <button id="consumer-home-btn" class="secondary">내 주문 조회</button>
+      <pre id="consumer-home-result"></pre>
+    </section>
+
+    <section>
+      <h2>주문 가능한 가게 조회 (/api/v1/home/stores)</h2>
+      <form id="consumer-store-form" class="row">
+        <label>위도 (lat)
+          <input name="lat" type="number" step="0.000001" placeholder="37.481403" required>
+        </label>
+        <label>경도 (lon)
+          <input name="lon" type="number" step="0.000001" placeholder="126.995157" required>
+        </label>
+        <label>페이지
+          <input name="page" type="number" min="0" value="0">
+        </label>
+        <label>페이지 크기
+          <input name="size" type="number" min="1" value="10">
+        </label>
+      </form>
+      <button id="consumer-store-btn" class="secondary">주문 가능한 가게 조회</button>
+      <pre id="consumer-store-result"></pre>
+    </section>
+
+    <section>
+      <h2>매장 노쇼 글 조회 (/api/v1/stores/{storeId}/no-show-posts)</h2>
+      <form id="consumer-posts-form" class="row">
+        <label>매장 ID
+          <input name="storeId" placeholder="UUID" required>
+        </label>
+        <label>페이지
+          <input name="page" type="number" min="0" value="0">
+        </label>
+        <label>페이지 크기
+          <input name="size" type="number" min="1" value="10">
+        </label>
+      </form>
+      <button id="consumer-posts-btn" class="secondary">노쇼 글 조회</button>
+      <pre id="consumer-posts-result"></pre>
+    </section>
+  </div>
+
+  <div id="tab-store" class="tab-panel active">
   <section id="config">
     <h2>환경 설정</h2>
     <div class="row">
@@ -176,7 +333,7 @@
     <h2>매장 수정</h2>
     <form id="update-form">
       <label>매장 ID
-        <input name="storeId" placeholder="UUID 형식" required>
+        <input name="storeId" placeholder="자동 표시" readonly>
       </label>
       <div class="row">
         <label>매장명
@@ -226,9 +383,8 @@
 
   <section id="store-read">
     <h2>매장 조회</h2>
-    <form id="fetch-form" class="flex">
-      <input name="storeId" placeholder="UUID" required>
-      <button type="submit" class="secondary">매장 정보 불러오기</button>
+    <form id="fetch-form">
+      <button type="submit" class="secondary" style="width:100%;">내 매장 정보 불러오기</button>
     </form>
     <p class="hint">조회 결과는 아래에 JSON으로 표시되고, 수정 폼에도 자동 반영됩니다.</p>
     <pre id="store-result"></pre>
@@ -238,19 +394,148 @@
     </div>
   </section>
 
+  <section id="menu-section">
+    <h2>메뉴 관리</h2>
+    <form id="menu-create-form">
+      <label>메뉴명
+        <input name="name" required>
+      </label>
+      <label>설명
+        <textarea name="description" placeholder="선택 입력"></textarea>
+      </label>
+      <label>가격(원)
+        <input name="priceKrw" type="number" min="0" required>
+      </label>
+      <button type="submit">메뉴 생성</button>
+    </form>
+
+    <form id="menu-update-form">
+      <label>메뉴 ID
+        <input name="menuId" placeholder="UUID" required>
+      </label>
+      <label>메뉴명
+        <input name="name">
+      </label>
+      <label>설명
+        <textarea name="description"></textarea>
+      </label>
+      <label>가격(원)
+        <input name="priceKrw" type="number" min="0">
+      </label>
+      <button type="submit" class="secondary">메뉴 수정</button>
+    </form>
+
+    <form id="menu-get-form" class="flex">
+      <input name="menuId" placeholder="메뉴 ID" required>
+      <button type="submit" class="secondary">메뉴 상세 조회</button>
+    </form>
+
+    <form id="menu-delete-form" class="flex">
+      <input name="menuId" placeholder="삭제할 메뉴 ID" required>
+      <button type="submit" class="secondary">메뉴 삭제</button>
+    </form>
+
+    <form id="menu-list-form" class="flex">
+      <input name="page" type="number" min="0" value="0">
+      <input name="size" type="number" min="1" value="10">
+      <button type="submit" class="secondary">메뉴 목록 조회</button>
+    </form>
+    <pre id="menu-result"></pre>
+    <div class="hint">최근 조회된 메뉴 목록이 아래 카드 형태로 표시됩니다.</div>
+    <div id="menu-display"></div>
+  </section>
+
+  <section id="menu-image-upload">
+    <h3>메뉴 이미지 업로드</h3>
+    <p class="hint">메뉴를 먼저 생성한 뒤 해당 메뉴 ID로 이미지를 업로드하세요.</p>
+    <div class="row">
+      <label>메뉴 ID
+        <input id="menu-upload-id" placeholder="UUID">
+      </label>
+      <label>이미지 파일
+        <input id="menu-upload-file" type="file" accept="image/*">
+      </label>
+    </div>
+    <button onclick="handleMenuImageUpload()">메뉴 이미지 업로드 실행</button>
+  </section>
+
   <section id="image-upload">
     <h2>매장 이미지 업로드</h2>
     <p class="hint">1) Presign 발급 → 2) S3 PUT → 3) 서버 confirm → 4) 자동으로 매장 이미지 메타 갱신</p>
     <div class="row">
-      <label>매장 ID
-        <input id="upload-store-id" placeholder="UUID" required>
-      </label>
       <label>이미지 파일
         <input id="upload-file" type="file" accept="image/*">
       </label>
     </div>
     <button onclick="handleImageUpload()">이미지 업로드 실행</button>
   </section>
+  </div>
+
+  <div id="tab-noshow" class="tab-panel">
+    <section id="noshow-create">
+      <h2>노쇼 글 일괄 생성</h2>
+      <p class="hint">메뉴를 선택하고 할인율/마감 시간을 입력하면 한 번에 노쇼 글을 생성할 수 있습니다.</p>
+      <form id="noshow-form">
+        <div id="noshow-items"></div>
+        <button type="button" id="add-noshow-item" class="secondary">메뉴 입력 추가</button>
+        <div class="row">
+          <label>할인율(%) 
+            <input name="discountPercent" type="number" min="30" max="90" value="30" required>
+          </label>
+          <label>마감까지 남은 시간(분)
+            <input name="expireMinutes" type="number" min="10" max="300" value="60" required>
+          </label>
+        </div>
+        <button type="submit">노쇼 글 생성</button>
+      </form>
+      <pre id="noshow-result"></pre>
+    </section>
+
+    <section id="noshow-list">
+      <h2>노쇼 글 조회</h2>
+      <form id="noshow-list-form" class="flex">
+        <input name="page" type="number" min="0" value="0" placeholder="page">
+        <input name="size" type="number" min="1" value="10" placeholder="size">
+        <input name="date" type="date">
+        <button type="submit" class="secondary">목록 조회</button>
+      </form>
+      <pre id="noshow-list-result"></pre>
+    </section>
+
+    <section id="noshow-detail">
+      <h2>노쇼 글 상세 조회</h2>
+      <form id="noshow-detail-form" class="flex">
+        <input name="postId" type="number" placeholder="노쇼 글 ID" required>
+        <button type="submit" class="secondary">상세 조회</button>
+      </form>
+      <pre id="noshow-detail-result"></pre>
+    </section>
+
+    <section id="noshow-order-list">
+      <h2>노쇼 주문 목록</h2>
+      <form id="noshow-order-list-form" class="flex">
+        <input name="page" type="number" min="0" value="0" placeholder="page">
+        <input name="size" type="number" min="1" value="10" placeholder="size">
+        <input name="date" type="date">
+        <button type="submit" class="secondary">주문 목록 조회</button>
+      </form>
+      <pre id="noshow-order-list-result"></pre>
+    </section>
+
+    <section id="noshow-order-detail">
+      <h2>노쇼 주문 상세 조회</h2>
+      <form id="noshow-order-detail-form" class="flex">
+        <input name="orderId" type="number" placeholder="주문 ID" required>
+        <button type="submit" class="secondary">주문 상세 조회</button>
+      </form>
+      <pre id="noshow-order-detail-result"></pre>
+      <form id="noshow-order-complete-form" class="flex">
+        <input name="orderId" type="number" placeholder="주문 ID" required>
+        <button type="submit">방문 완료 처리</button>
+      </form>
+      <pre id="noshow-order-complete-result"></pre>
+    </section>
+  </div>
 
   <section id="log-section">
     <h2>로그</h2>
@@ -261,11 +546,23 @@
     const state = {
       baseUrl: document.getElementById("base-url").value.trim(),
       token: "",
+      consumerToken: "",
     };
+    const consumerBaseInput = document.getElementById("consumer-base-url");
+    if (consumerBaseInput) {
+      consumerBaseInput.value = state.baseUrl;
+    }
+    const menuImageCache = new Map();
+    document.querySelectorAll(".tab-button").forEach(btn => {
+      btn.addEventListener("click", () => switchTab(btn.dataset.target));
+    });
 
     function applyConfig() {
       state.baseUrl = document.getElementById("base-url").value.trim().replace(/\/$/, "");
       state.token = document.getElementById("access-token").value.trim();
+      if (consumerBaseInput) {
+        consumerBaseInput.value = state.baseUrl;
+      }
       appendLog("환경 설정이 적용되었습니다.");
     }
 
@@ -279,6 +576,23 @@
       log.textContent = text + "\\n\\n" + log.textContent;
     }
 
+    function applyConsumerToken() {
+      const base = consumerBaseInput?.value.trim().replace(/\/$/, "");
+      if (!base) {
+        appendLog("소비자용 API Base URL을 입력하세요.");
+        return;
+      }
+      state.baseUrl = base;
+      document.getElementById("base-url").value = base;
+
+      state.consumerToken = document.getElementById("consumer-token").value.trim();
+      if (!state.consumerToken) {
+        appendLog("소비자 토큰이 비어 있습니다. 다시 입력하세요.");
+        return;
+      }
+      appendLog("소비자 설정이 저장되었습니다.");
+    }
+
     function authHeaders() {
       if (!state.token) {
         throw new Error("Access Token을 먼저 입력하세요.");
@@ -286,6 +600,16 @@
       return {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${state.token}`,
+      };
+    }
+
+    function consumerHeaders() {
+      if (!state.consumerToken) {
+        throw new Error("소비자 Access Token을 먼저 입력하세요.");
+      }
+      return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${state.consumerToken}`,
       };
     }
 
@@ -308,7 +632,7 @@
           imageEtag: null,
         };
         appendLog("매장 생성 요청", payload);
-        const res = await fetch(`${state.baseUrl}/v1/api/stores`, {
+        const res = await fetch(`${state.baseUrl}/api/v1/stores`, {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify(payload),
@@ -317,7 +641,6 @@
         appendLog("매장 생성 응답", body);
         if (body?.success && body?.data?.id) {
           document.querySelector("#update-form [name='storeId']").value = body.data.id;
-          document.getElementById("upload-store-id").value = body.data.id;
         }
       } catch (err) {
         appendLog("매장 생성 실패", { error: err.message });
@@ -327,11 +650,6 @@
     async function handleUpdate(event) {
       event.preventDefault();
       const form = event.target;
-      const storeId = form.storeId.value.trim();
-      if (!storeId) {
-        appendLog("매장 ID를 입력하세요.");
-        return;
-      }
       try {
         const payload = {
           name: form.name.value.trim() || null,
@@ -347,8 +665,8 @@
           imageMime: form.imageMime.value.trim() || null,
           imageEtag: form.imageEtag.value.trim() || null,
         };
-        appendLog("매장 수정 요청", { storeId, payload });
-        const res = await fetch(`${state.baseUrl}/api/v1/stores/${storeId}`, {
+        appendLog("매장 수정 요청", payload);
+        const res = await fetch(`${state.baseUrl}/api/v1/stores`, {
           method: "PATCH",
           headers: authHeaders(),
           body: JSON.stringify(payload),
@@ -361,16 +679,15 @@
     }
 
     async function handleImageUpload() {
-      const storeId = document.getElementById("upload-store-id").value.trim();
       const fileInput = document.getElementById("upload-file");
       const file = fileInput.files[0];
-      if (!storeId || !file) {
-        appendLog("매장 ID와 이미지를 모두 선택하세요.");
+      if (!file) {
+        appendLog("이미지를 선택하세요.");
         return;
       }
       try {
         appendLog("Presign 요청 시작", { fileName: file.name, type: file.type });
-        const presignRes = await fetch(`${state.baseUrl}/api/v1/stores/${storeId}/uploads/presign`, {
+        const presignRes = await fetch(`${state.baseUrl}/api/v1/stores/uploads/presign`, {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify({
@@ -404,7 +721,7 @@
         appendLog("S3 업로드 완료", { key, etag });
 
         appendLog("업로드 Confirm 호출");
-        const confirmRes = await fetch(`${state.baseUrl}/api/v1/stores/${storeId}/uploads/confirm`, {
+        const confirmRes = await fetch(`${state.baseUrl}/api/v1/stores/uploads/confirm`, {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify({ key, etag }),
@@ -421,7 +738,7 @@
         document.querySelector("#update-form [name='imageEtag']").value = metadata.etag;
 
         appendLog("매장 이미지 정보 업데이트 호출");
-        const patchRes = await fetch(`${state.baseUrl}/v1/api/stores/${storeId}`, {
+        const patchRes = await fetch(`${state.baseUrl}/api/v1/stores`, {
           method: "PATCH",
           headers: authHeaders(),
           body: JSON.stringify({
@@ -433,28 +750,39 @@
         const patchBody = await patchRes.json();
         appendLog("이미지 정보 업데이트 응답", patchBody);
         if (patchBody?.success) {
-          loadStoreImage(storeId);
+          loadStoreImage();
         }
       } catch (err) {
         appendLog("이미지 업로드 실패", { error: err.message });
       }
     }
 
+    document.getElementById("consumer-token-apply").addEventListener("click", applyConsumerToken);
     document.getElementById("create-form").addEventListener("submit", handleCreate);
     document.getElementById("update-form").addEventListener("submit", handleUpdate);
     document.getElementById("fetch-form").addEventListener("submit", handleFetch);
+    document.getElementById("menu-create-form").addEventListener("submit", handleMenuCreate);
+    document.getElementById("menu-update-form").addEventListener("submit", handleMenuUpdate);
+    document.getElementById("menu-get-form").addEventListener("submit", handleMenuGet);
+    document.getElementById("menu-delete-form").addEventListener("submit", handleMenuDelete);
+    document.getElementById("menu-list-form").addEventListener("submit", handleMenuList);
+    document.getElementById("noshow-form").addEventListener("submit", handleNoshowCreate);
+    document.getElementById("add-noshow-item").addEventListener("click", () => addNoshowItem());
+    document.getElementById("noshow-list-form").addEventListener("submit", handleNoshowList);
+    document.getElementById("noshow-detail-form").addEventListener("submit", handleNoshowDetail);
+    document.getElementById("noshow-order-list-form").addEventListener("submit", handleNoshowOrderList);
+    document.getElementById("noshow-order-detail-form").addEventListener("submit", handleNoshowOrderDetail);
+    document.getElementById("noshow-order-complete-form").addEventListener("submit", handleNoshowOrderComplete);
+    document.getElementById("consumer-home-btn").addEventListener("click", handleConsumerHome);
+    document.getElementById("consumer-store-btn").addEventListener("click", handleConsumerStores);
+    document.getElementById("consumer-posts-btn").addEventListener("click", handleConsumerStorePosts);
+    addNoshowItem();
 
     async function handleFetch(event) {
       event.preventDefault();
-      const form = event.target;
-      const storeId = form.storeId.value.trim();
-      if (!storeId) {
-        appendLog("조회할 매장 ID를 입력하세요.");
-        return;
-      }
       try {
-        appendLog("매장 조회 요청", { storeId });
-        const res = await fetch(`${state.baseUrl}/v1/api/stores/${storeId}`, {
+        appendLog("매장 조회 요청", { self: true });
+        const res = await fetch(`${state.baseUrl}/api/v1/stores/me`, {
           method: "GET",
           headers: authHeaders(),
         });
@@ -485,11 +813,8 @@ function populateUpdateForm(data) {
       updateForm.imageKey.value = data.imageKey || "";
       updateForm.imageMime.value = data.imageMime || "";
       updateForm.imageEtag.value = data.imageEtag || "";
-  document.getElementById("upload-store-id").value = data.id || "";
-  const fetchInput = document.querySelector("#fetch-form input[name='storeId']");
-  if (fetchInput) fetchInput.value = data.id || "";
   if (data.imageKey) {
-    loadStoreImage(data.id);
+    loadStoreImage();
   } else {
     hideStoreImage();
   }
@@ -500,13 +825,9 @@ function formatTimeInput(value) {
   return value.slice(0, 5);
 }
 
-async function loadStoreImage(storeId) {
-  if (!storeId) {
-    hideStoreImage();
-    return;
-  }
+async function loadStoreImage() {
   try {
-    const res = await fetch(`${state.baseUrl}/api/v1/stores/${storeId}/uploads/view`, {
+    const res = await fetch(`${state.baseUrl}/api/v1/stores/uploads/view`, {
       method: "GET",
       headers: authHeaders(),
     });
@@ -524,11 +845,573 @@ async function loadStoreImage(storeId) {
   }
 }
 
-function hideStoreImage() {
-  const img = document.getElementById("store-image");
-  img.removeAttribute("src");
-  document.getElementById("store-image-box").style.display = "none";
-}
+    function hideStoreImage() {
+      const img = document.getElementById("store-image");
+      img.removeAttribute("src");
+      document.getElementById("store-image-box").style.display = "none";
+    }
+
+    async function handleMenuCreate(event) {
+      event.preventDefault();
+      const form = event.target;
+      const payload = {
+        name: form.name.value.trim(),
+        description: form.description.value.trim() || null,
+        priceKrw: Number(form.priceKrw.value)
+      };
+      try {
+        appendLog("메뉴 생성 요청", payload);
+        const res = await fetch(`${state.baseUrl}/owner/menus`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(payload),
+        });
+        const body = await res.json();
+        appendLog("메뉴 생성 응답", body);
+      } catch (err) {
+        appendLog("메뉴 생성 실패", { error: err.message });
+      }
+    }
+
+    async function handleMenuUpdate(event) {
+      event.preventDefault();
+      const form = event.target;
+      const menuId = form.menuId.value.trim();
+      if (!menuId) {
+        appendLog("메뉴 ID를 입력하세요.");
+        return;
+      }
+      const payload = {
+        name: form.name.value.trim() || null,
+        description: form.description.value.trim() || null,
+        priceKrw: form.priceKrw.value ? Number(form.priceKrw.value) : null
+      };
+      try {
+        appendLog("메뉴 수정 요청", { menuId, payload });
+        const res = await fetch(`${state.baseUrl}/owner/menus/${menuId}`, {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify(payload),
+        });
+        const body = await res.json();
+        appendLog("메뉴 수정 응답", body);
+      } catch (err) {
+        appendLog("메뉴 수정 실패", { error: err.message });
+      }
+    }
+
+    async function handleMenuGet(event) {
+      event.preventDefault();
+      const menuId = event.target.menuId.value.trim();
+      if (!menuId) return appendLog("메뉴 ID를 입력하세요.");
+      try {
+        appendLog("메뉴 상세 조회 요청", { menuId });
+        const res = await fetch(`${state.baseUrl}/owner/menus/${menuId}`, {
+          method: "GET",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        document.getElementById("menu-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("메뉴 상세 조회 응답", body);
+      } catch (err) {
+        appendLog("메뉴 상세 조회 실패", { error: err.message });
+      }
+    }
+
+    async function handleMenuDelete(event) {
+      event.preventDefault();
+      const menuId = event.target.menuId.value.trim();
+      if (!menuId) return appendLog("삭제할 메뉴 ID를 입력하세요.");
+      try {
+        appendLog("메뉴 삭제 요청", { menuId });
+        const res = await fetch(`${state.baseUrl}/owner/menus/${menuId}`, {
+          method: "DELETE",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        appendLog("메뉴 삭제 응답", body);
+      } catch (err) {
+        appendLog("메뉴 삭제 실패", { error: err.message });
+      }
+    }
+
+    async function handleMenuList(event) {
+      event.preventDefault();
+      const form = event.target;
+      const page = Number(form.page.value) || 0;
+      const size = Number(form.size.value) || 10;
+      try {
+        appendLog("메뉴 목록 조회 요청", { page, size });
+        const res = await fetch(`${state.baseUrl}/owner/menus?page=${page}&size=${size}`, {
+          method: "GET",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        document.getElementById("menu-result").textContent = JSON.stringify(body, null, 2);
+        renderMenuList(body);
+        appendLog("메뉴 목록 조회 응답", body);
+      } catch (err) {
+        appendLog("메뉴 목록 조회 실패", { error: err.message });
+      }
+    }
+
+    function renderMenuList(body) {
+      const container = document.getElementById("menu-display");
+      if (!container) return;
+      container.innerHTML = "";
+      if (!body?.success) {
+        container.textContent = "목록을 불러오지 못했습니다.";
+        return;
+      }
+      const page = body.data;
+      const menus = page?.content ?? [];
+      if (menus.length === 0) {
+        container.textContent = "등록된 메뉴가 없습니다.";
+        return;
+      }
+      menus.forEach(menu => {
+        container.appendChild(createMenuCard(menu));
+      });
+    }
+
+    function createMenuCard(menu) {
+      const card = document.createElement("div");
+      card.className = "menu-card";
+
+      const imageBox = document.createElement("div");
+      imageBox.className = "menu-card-image";
+      imageBox.textContent = menu.imageKey ? "이미지를 불러오는 중..." : "이미지 없음";
+      card.appendChild(imageBox);
+      if (menu.imageKey) {
+        loadMenuImageForCard(menu.id, imageBox);
+      } else {
+        imageBox.classList.add("empty");
+        menuImageCache.delete(menu.id);
+      }
+
+      const title = document.createElement("div");
+      title.className = "menu-card-title";
+      title.textContent = menu.name || "(이름 없음)";
+      card.appendChild(title);
+
+      const meta = document.createElement("div");
+      meta.className = "menu-card-meta";
+      const priceSpan = document.createElement("span");
+      priceSpan.textContent = formatCurrency(menu.priceKrw);
+      const statusSpan = document.createElement("span");
+      statusSpan.textContent = `이미지: ${menu.imageStatus || "pending"}`;
+      meta.append(priceSpan, statusSpan);
+      card.appendChild(meta);
+
+      const desc = document.createElement("p");
+      desc.className = "menu-card-desc";
+      desc.textContent = menu.description || "설명이 없습니다.";
+      card.appendChild(desc);
+
+      return card;
+    }
+
+    async function loadMenuImageForCard(menuId, imageBox) {
+      if (!menuId || !imageBox) return;
+      if (menuImageCache.has(menuId)) {
+        setMenuImageBox(imageBox, menuImageCache.get(menuId));
+        return;
+      }
+      try {
+        const res = await fetch(`${state.baseUrl}/api/v1/menus/${menuId}/uploads/view`, {
+          method: "GET",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        if (body?.success && body?.data?.url) {
+          menuImageCache.set(menuId, body.data.url);
+          setMenuImageBox(imageBox, body.data.url);
+        } else {
+          setMenuImageBox(imageBox, null);
+        }
+      } catch (err) {
+        imageBox.textContent = "이미지 로딩 실패";
+        imageBox.classList.add("empty");
+      }
+    }
+
+    function setMenuImageBox(box, url) {
+      box.innerHTML = "";
+      if (url) {
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "메뉴 이미지";
+        box.appendChild(img);
+        box.classList.remove("empty");
+      } else {
+        box.textContent = "이미지 없음";
+        box.classList.add("empty");
+      }
+    }
+
+    function formatCurrency(value) {
+      if (typeof value !== "number" || Number.isNaN(value)) {
+        return "-";
+      }
+      return new Intl.NumberFormat("ko-KR").format(value) + "원";
+    }
+
+    async function handleMenuImageUpload() {
+      const menuId = document.getElementById("menu-upload-id").value.trim();
+      const fileInput = document.getElementById("menu-upload-file");
+      const file = fileInput.files[0];
+      if (!menuId || !file) {
+        appendLog("메뉴 ID와 이미지를 모두 선택하세요.");
+        return;
+      }
+      try {
+        appendLog("메뉴 이미지 Presign 요청", { menuId, fileName: file.name });
+        const presignRes = await fetch(`${state.baseUrl}/api/v1/menus/${menuId}/uploads/presign`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            fileName: file.name,
+            contentType: file.type || "application/octet-stream",
+          }),
+        });
+        const presignBody = await presignRes.json();
+        appendLog("메뉴 이미지 Presign 응답", presignBody);
+        if (!presignBody.success) throw new Error("Presign 실패");
+        const { url, key } = presignBody.data;
+
+        appendLog("메뉴 이미지 S3 업로드");
+        const putRes = await fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "application/octet-stream" },
+          body: file,
+        });
+        if (!putRes.ok) {
+          throw new Error(`S3 업로드 실패: ${putRes.status}`);
+        }
+        let etag = putRes.headers.get("ETag") || putRes.headers.get("etag");
+        if (!etag) throw new Error("ETag 헤더가 없습니다.");
+        etag = etag.replace(/"/g, "");
+
+        appendLog("메뉴 이미지 Confirm 호출", { key, etag });
+        const confirmRes = await fetch(`${state.baseUrl}/api/v1/menus/${menuId}/uploads/confirm`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ key, etag }),
+        });
+        const confirmBody = await confirmRes.json();
+        appendLog("메뉴 이미지 Confirm 응답", confirmBody);
+        if (!confirmBody.success) throw new Error("Confirm 실패");
+
+        const metadata = confirmBody.data;
+        appendLog("메뉴 이미지 정보 PATCH", metadata);
+        const patchRes = await fetch(`${state.baseUrl}/owner/menus/${menuId}`, {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            imageKey: metadata.key,
+            imageMime: metadata.contentType,
+            imageEtag: metadata.etag
+          }),
+        });
+        const patchBody = await patchRes.json();
+        appendLog("메뉴 이미지 정보 PATCH 응답", patchBody);
+      } catch (err) {
+        appendLog("메뉴 이미지 업로드 실패", { error: err.message });
+      }
+    }
+
+    function switchTab(targetId) {
+      document.querySelectorAll(".tab-button").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.target === targetId);
+      });
+      document.querySelectorAll(".tab-panel").forEach(panel => {
+        panel.classList.toggle("active", panel.id === targetId);
+      });
+    }
+
+    function addNoshowItem(menuId = "", quantity = 1) {
+      const container = document.getElementById("noshow-items");
+      const row = document.createElement("div");
+      row.className = "noshow-item-row";
+      row.innerHTML = `
+        <label>메뉴 ID
+          <input type="text" class="noshow-menu-id" placeholder="메뉴 UUID">
+        </label>
+        <label>수량
+          <input type="number" class="noshow-qty" min="1" value="1">
+        </label>
+        <button type="button" class="secondary">삭제</button>
+      `;
+      container.appendChild(row);
+      const menuInput = row.querySelector(".noshow-menu-id");
+      const qtyInput = row.querySelector(".noshow-qty");
+      menuInput.value = menuId;
+      qtyInput.value = quantity;
+      row.querySelector("button").addEventListener("click", () => {
+        container.removeChild(row);
+      });
+    }
+
+    async function handleNoshowCreate(event) {
+      event.preventDefault();
+      try {
+        const items = collectNoshowItems();
+        if (!items.length) {
+          throw new Error("최소 1개의 메뉴를 입력하세요.");
+        }
+        const form = event.target;
+        const discountPercent = Number(form.discountPercent.value);
+        const expireMinutes = Number(form.expireMinutes.value);
+        if (!Number.isFinite(discountPercent)) {
+          throw new Error("할인율을 입력하세요.");
+        }
+        if (!Number.isFinite(expireMinutes)) {
+          throw new Error("마감 시간을 입력하세요.");
+        }
+        const expireAt = buildKstIsoString(expireMinutes);
+        const payload = { items, discountPercent, expireAt };
+        appendLog("노쇼 글 생성 요청", payload);
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/no-show-posts/batch`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(payload),
+        });
+        const body = await res.json();
+        document.getElementById("noshow-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("노쇼 글 생성 응답", body);
+      } catch (err) {
+        appendLog("노쇼 글 생성 실패", { error: err.message });
+        document.getElementById("noshow-result").textContent = err.message;
+      }
+    }
+
+    function collectNoshowItems() {
+      const rows = document.querySelectorAll("#noshow-items .noshow-item-row");
+      const items = [];
+      for (const row of rows) {
+        const menuId = row.querySelector(".noshow-menu-id").value.trim();
+        const quantity = Number(row.querySelector(".noshow-qty").value);
+        if (!menuId) {
+          throw new Error("모든 메뉴 ID를 입력하세요.");
+        }
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+          throw new Error("수량은 1 이상 정수여야 합니다.");
+        }
+        items.push({ menuId, quantity });
+      }
+      return items;
+    }
+
+    function buildKstIsoString(addMinutes) {
+      const targetMs = Date.now() + (Number(addMinutes) || 0) * 60000;
+      const formatter = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
+      const parts = formatter.formatToParts(new Date(targetMs))
+        .reduce((acc, part) => {
+          if (part.type !== "literal") acc[part.type] = part.value;
+          return acc;
+        }, {});
+      const second = parts.second ?? "00";
+      return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${second}+09:00`;
+    }
+
+    async function handleNoshowList(event) {
+      event.preventDefault();
+      const form = event.target;
+      const page = Number(form.page.value) || 0;
+      const size = Number(form.size.value) || 10;
+      const date = form.date.value ? `&date=${form.date.value}` : "";
+      try {
+        appendLog("노쇼 글 목록 조회 요청", { page, size, date });
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/no-show-posts?page=${page}&size=${size}${date}`, {
+          method: "GET",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        document.getElementById("noshow-list-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("노쇼 글 목록 조회 응답", body);
+      } catch (err) {
+        appendLog("노쇼 글 목록 조회 실패", { error: err.message });
+        document.getElementById("noshow-list-result").textContent = err.message;
+      }
+    }
+
+    async function handleNoshowDetail(event) {
+      event.preventDefault();
+      const postId = event.target.postId.value.trim();
+      if (!postId) {
+        appendLog("상세 조회할 노쇼 글 ID를 입력하세요.");
+        return;
+      }
+      try {
+        appendLog("노쇼 글 상세 조회 요청", { postId });
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/no-show-posts/${postId}`, {
+          method: "GET",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        document.getElementById("noshow-detail-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("노쇼 글 상세 조회 응답", body);
+      } catch (err) {
+        appendLog("노쇼 글 상세 조회 실패", { error: err.message });
+        document.getElementById("noshow-detail-result").textContent = err.message;
+      }
+    }
+
+    async function handleNoshowOrderList(event) {
+      event.preventDefault();
+      const form = event.target;
+      const page = Number(form.page.value) || 0;
+      const size = Number(form.size.value) || 10;
+      const status = form.status.value.trim();
+      const date = form.date.value;
+      const params = new URLSearchParams({
+        page: page.toString(),
+        size: size.toString()
+      });
+      if (status) params.append("status", status);
+      if (date) params.append("date", date);
+      try {
+        appendLog("노쇼 주문 목록 조회 요청", Object.fromEntries(params));
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/orders?${params.toString()}`, {
+          method: "GET",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        document.getElementById("noshow-order-list-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("노쇼 주문 목록 조회 응답", body);
+      } catch (err) {
+        appendLog("노쇼 주문 목록 조회 실패", { error: err.message });
+        document.getElementById("noshow-order-list-result").textContent = err.message;
+      }
+    }
+
+    async function handleNoshowOrderDetail(event) {
+      event.preventDefault();
+      const orderId = event.target.orderId.value.trim();
+      if (!orderId) {
+        appendLog("주문 ID를 입력하세요.");
+        return;
+      }
+      try {
+        appendLog("노쇼 주문 상세 조회 요청", { orderId });
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/orders/${orderId}`, {
+          method: "GET",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        document.getElementById("noshow-order-detail-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("노쇼 주문 상세 조회 응답", body);
+      } catch (err) {
+        appendLog("노쇼 주문 상세 조회 실패", { error: err.message });
+        document.getElementById("noshow-order-detail-result").textContent = err.message;
+      }
+    }
+
+    async function handleNoshowOrderComplete(event) {
+      event.preventDefault();
+      const orderId = event.target.orderId.value.trim();
+      if (!orderId) {
+        appendLog("완료 처리할 주문 ID를 입력하세요.");
+        return;
+      }
+      try {
+        appendLog("노쇼 주문 완료 처리 요청", { orderId });
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/orders/${orderId}/complete`, {
+          method: "POST",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        document.getElementById("noshow-order-complete-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("노쇼 주문 완료 처리 응답", body);
+      } catch (err) {
+        appendLog("노쇼 주문 완료 처리 실패", { error: err.message });
+        document.getElementById("noshow-order-complete-result").textContent = err.message;
+      }
+    }
+
+    async function handleConsumerHome() {
+      try {
+        appendLog("소비자 홈 조회 요청");
+        const res = await fetch(`${state.baseUrl}/api/v1/home`, {
+          method: "GET",
+          headers: consumerHeaders(),
+        });
+        const body = await res.json();
+        document.getElementById("consumer-home-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("소비자 홈 응답", body);
+      } catch (err) {
+        appendLog("소비자 홈 조회 실패", { error: err.message });
+        document.getElementById("consumer-home-result").textContent = err.message;
+      }
+    }
+
+    async function handleConsumerStores() {
+      const form = document.getElementById("consumer-store-form");
+      const lat = Number(form.lat.value);
+      const lon = Number(form.lon.value);
+      const page = Number(form.page.value) || 0;
+      const size = Number(form.size.value) || 10;
+      if (!lat || !lon) {
+        appendLog("위도와 경도를 입력하세요.");
+        return;
+      }
+      const params = new URLSearchParams({
+        lat: lat.toFixed(6),
+        lon: lon.toFixed(6),
+        page: page.toString(),
+        size: size.toString()
+      });
+      try {
+        appendLog("주문 가능한 가게 조회 요청", Object.fromEntries(params));
+        const res = await fetch(`${state.baseUrl}/api/v1/home/stores?${params.toString()}`, {
+          method: "GET",
+          headers: consumerHeaders(),
+        });
+        const body = await res.json();
+        document.getElementById("consumer-store-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("주문 가능한 가게 응답", body);
+      } catch (err) {
+        appendLog("주문 가능한 가게 조회 실패", { error: err.message });
+        document.getElementById("consumer-store-result").textContent = err.message;
+      }
+    }
+
+    async function handleConsumerStorePosts() {
+      const form = document.getElementById("consumer-posts-form");
+      const storeId = form.storeId.value.trim();
+      const page = Number(form.page.value) || 0;
+      const size = Number(form.size.value) || 10;
+      if (!storeId) {
+        appendLog("매장 ID를 입력하세요.");
+        return;
+      }
+      const params = new URLSearchParams({
+        page: page.toString(),
+        size: size.toString()
+      });
+      try {
+        appendLog("매장 노쇼 글 조회 요청", { storeId, page, size });
+        const res = await fetch(`${state.baseUrl}/api/v1/stores/${storeId}/no-show-posts?${params.toString()}`, {
+          method: "GET",
+          headers: consumerHeaders(),
+        });
+        const body = await res.json();
+        document.getElementById("consumer-posts-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("매장 노쇼 글 조회 응답", body);
+      } catch (err) {
+        appendLog("매장 노쇼 글 조회 실패", { error: err.message });
+        document.getElementById("consumer-posts-result").textContent = err.message;
+      }
+    }
   </script>
 </body>
 </html>

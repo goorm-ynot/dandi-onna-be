@@ -26,8 +26,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * @author rua
+ */
+
 @RestController
-@RequestMapping("/owner/no-show-posts")
+@RequestMapping("api/v1/owner/no-show-posts")
 @Validated
 @RequiredArgsConstructor
 public class NoShowPostController {
