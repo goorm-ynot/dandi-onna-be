@@ -128,4 +128,17 @@ public class NoShowPost extends BaseEntity {
 		this.expireAt = expireAt;
 		this.status = NoShowPostStatus.open;
 	}
+
+	public void consumeQuantity(int amount) {
+		if (amount <= 0) {
+			throw new IllegalArgumentException("차감 수량은 0보다 커야 합니다.");
+		}
+		if (qtyRemaining < amount) {
+			throw new IllegalArgumentException("잔여 수량이 부족합니다.");
+		}
+		this.qtyRemaining -= amount;
+		if (this.qtyRemaining == 0) {
+			this.status = NoShowPostStatus.sold_out;
+		}
+	}
 }

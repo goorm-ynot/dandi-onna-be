@@ -286,6 +286,32 @@
       </div>
       <pre id="favorite-result"></pre>
     </section>
+
+    <section>
+      <h2>노쇼 주문 생성 (/api/v1/orders)</h2>
+      <form id="consumer-order-form" class="row">
+        <label>매장 ID
+          <input name="storeId" placeholder="UUID" required>
+        </label>
+        <label>방문 시간 (visitTime)
+          <input name="visitTime" type="datetime-local" required>
+        </label>
+        <label>결제 수단
+          <input name="paymentMethod" value="CARD" required>
+        </label>
+        <label>총 결제 금액 (totalAmount)
+          <input name="totalAmount" type="number" min="0" value="0" required>
+        </label>
+        <label>할인 금액 (appliedDiscountAmount)
+          <input name="discountAmount" type="number" min="0" value="0" required>
+        </label>
+      </form>
+      <label>주문 항목 JSON (items)
+        <textarea id="consumer-order-items" rows="6" placeholder='[{"noShowPostId":1,"menuName":"..","quantity":1,"originalPrice":30000,"discountRate":50}]'></textarea>
+      </label>
+      <button id="consumer-order-btn" class="secondary">노쇼 주문 생성</button>
+      <pre id="consumer-order-result"></pre>
+    </section>
   </div>
 
   <div id="tab-store" class="tab-panel active">
@@ -530,6 +556,13 @@
       <form id="noshow-order-list-form" class="flex">
         <input name="page" type="number" min="0" value="0" placeholder="page">
         <input name="size" type="number" min="1" value="10" placeholder="size">
+        <select name="status">
+          <option value="">상태 전체</option>
+          <option value="PENDING">PENDING</option>
+          <option value="CONFIRMED">CONFIRMED</option>
+          <option value="CANCELLED">CANCELLED</option>
+          <option value="COMPLETED">COMPLETED</option>
+        </select>
         <input name="date" type="date">
         <button type="submit" class="secondary">주문 목록 조회</button>
       </form>
@@ -792,6 +825,7 @@
     document.getElementById("consumer-posts-btn").addEventListener("click", handleConsumerStorePosts);
     document.getElementById("favorite-add-btn").addEventListener("click", () => handleFavorite("POST"));
     document.getElementById("favorite-remove-btn").addEventListener("click", () => handleFavorite("DELETE"));
+    document.getElementById("consumer-order-btn").addEventListener("click", handleConsumerOrderCreate);
     addNoshowItem();
 
     async function handleFetch(event) {
@@ -1449,6 +1483,57 @@ async function loadStoreImage() {
       } catch (err) {
         appendLog("즐겨찾기 요청 실패", { error: err.message });
         document.getElementById("favorite-result").textContent = err.message;
+      }
+    }
+
+    async function handleConsumerOrderCreate() {
+      const form = document.getElementById("consumer-order-form");
+      const storeId = form.storeId.value.trim();
+      if (!storeId) {
+        appendLog("주문 생성에는 매장 ID가 필요합니다.");
+        return;
+      }
+      let visitTime = form.visitTime.value;
+      if (!visitTime) {
+        appendLog("visitTime을 입력하세요.");
+        return;
+      }
+      visitTime = `${visitTime}:00+09:00`;
+
+      let items;
+      try {
+        const raw = document.getElementById("consumer-order-items").value.trim();
+        items = raw ? JSON.parse(raw) : [];
+      } catch (err) {
+        appendLog("주문 항목 JSON 파싱 실패", { error: err.message });
+        return;
+      }
+      if (!Array.isArray(items) || items.length === 0) {
+        appendLog("주문 항목을 한 개 이상 입력하세요.");
+        return;
+      }
+
+      const payload = {
+        storeId,
+        visitTime,
+        paymentMethod: form.paymentMethod.value.trim() || "CARD",
+        totalAmount: Number(form.totalAmount.value) || 0,
+        appliedDiscountAmount: Number(form.discountAmount.value) || 0,
+        items
+      };
+      try {
+        appendLog("노쇼 주문 생성 요청", payload);
+        const res = await fetch(`${state.baseUrl}/api/v1/orders`, {
+          method: "POST",
+          headers: consumerHeaders(),
+          body: JSON.stringify(payload),
+        });
+        const body = await res.json();
+        document.getElementById("consumer-order-result").textContent = JSON.stringify(body, null, 2);
+        appendLog("노쇼 주문 생성 응답", body);
+      } catch (err) {
+        appendLog("노쇼 주문 생성 실패", { error: err.message });
+        document.getElementById("consumer-order-result").textContent = err.message;
       }
     }
   </script>

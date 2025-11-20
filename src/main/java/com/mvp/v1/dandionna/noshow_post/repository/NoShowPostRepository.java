@@ -1,6 +1,8 @@
 package com.mvp.v1.dandionna.noshow_post.repository;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,4 +37,8 @@ public interface NoShowPostRepository extends JpaRepository<NoShowPost, Long> {
 		OffsetDateTime now,
 		Pageable pageable
 	);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select p from NoShowPost p where p.id in :ids and p.deletedAt is null")
+	List<NoShowPost> findAllByIdInForUpdate(@Param("ids") Collection<Long> ids);
 }

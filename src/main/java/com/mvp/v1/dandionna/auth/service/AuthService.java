@@ -33,7 +33,6 @@ public class AuthService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JweTokenService tokenService;
-	private final JwtProps jwtProps;
 	private final TokenBlacklistService blacklistService;
 
 	public LoginResponse login(LoginRequest request) {
@@ -86,11 +85,6 @@ public class AuthService {
 		String userId = claims.getSubject();
 		User user = userRepository.findById(UUID.fromString(userId))
 			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-
-		Duration remaining = remainingTtl(refreshToken);
-		if (!remaining.isZero() && !remaining.isNegative()) {
-			blacklistService.blacklistRefreshToken(refreshToken, remaining);
-		}
 
 		String newAccess = tokenService.issueAccessToken(user.getId().toString(), user.getRole().name());
 		return RefreshTokenResponse.of(newAccess);

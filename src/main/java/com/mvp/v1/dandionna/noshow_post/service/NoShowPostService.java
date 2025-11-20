@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mvp.v1.dandionna.common.dto.ErrorCode;
 import com.mvp.v1.dandionna.common.exeption.BusinessException;
+import com.mvp.v1.dandionna.favorite.service.FavoriteNotificationService;
 import com.mvp.v1.dandionna.menu.entity.Menu;
 import com.mvp.v1.dandionna.menu.repository.MenuRepository;
 import com.mvp.v1.dandionna.noshow_post.NoShowConstants;
@@ -48,6 +49,7 @@ public class NoShowPostService {
 	private final MenuRepository menuRepository;
 	private final NoShowPostRepository noShowPostRepository;
 	private final NoShowPostHistoryRepository noShowPostHistoryRepository;
+	private final FavoriteNotificationService favoriteNotificationService;
 
 	private static final String HISTORY_REASON_REPLACED = "REPLACED";
 
@@ -93,6 +95,7 @@ public class NoShowPostService {
 						expireAtUtc
 					);
 					noShowPostRepository.save(post);
+					favoriteNotificationService.notifyNoShowPost(store, menu, post);
 				});
 		}
 	}
@@ -106,7 +109,7 @@ public class NoShowPostService {
 		OffsetDateTime startOfDay = targetDate.atStartOfDay(NoShowConstants.ZONE_KST).withZoneSameInstant(NoShowConstants.DB_ZONE).toOffsetDateTime();
 		OffsetDateTime endOfDay = targetDate.plusDays(1).atStartOfDay(NoShowConstants.ZONE_KST).withZoneSameInstant(NoShowConstants.DB_ZONE).toOffsetDateTime();
 
-		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "expireAt"));
+		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "expireAt").and(Sort.by(Sort.Direction.ASC, "createdAt")));
 		Page<NoShowPost> posts = noShowPostRepository.findByStoreIdAndExpireAtBetween(store.getId(), startOfDay, endOfDay, pageable);
 
 		Map<UUID, Menu> menuMap = loadMenus(store.getId(),
@@ -115,7 +118,6 @@ public class NoShowPostService {
 				.toList());
 
 		List<NoShowPostsResponse.PostItem> items = posts.getContent().stream()
-			.sorted((a, b) -> b.getExpireAt().compareTo(a.getExpireAt()))
 			.map(post -> {
 				Menu menu = menuMap.get(post.getMenuId());
 				return new NoShowPostsResponse.PostItem(
