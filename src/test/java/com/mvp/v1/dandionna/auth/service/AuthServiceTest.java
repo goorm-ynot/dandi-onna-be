@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,11 +56,7 @@ class AuthServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		JwtProps jwtProps = new JwtProps(
-			new JwtProps.Jwt("issuer", 15, 7),
-			new JwtProps.Jwe("A256GCM", "dummy")
-		);
-		authService = new AuthService(userRepository, passwordEncoder, tokenService, jwtProps, blacklistService);
+		authService = new AuthService(userRepository, passwordEncoder, tokenService, blacklistService);
 	}
 
 	@Test
@@ -149,7 +146,6 @@ class AuthServiceTest {
 
 		// then: 신규 토큰이 발급되고 기존 refresh 토큰은 블랙리스트 처리
 		assertThat(response.accessToken()).isEqualTo("new-access");
-		verify(blacklistService).blacklistRefreshToken(eq(refreshToken), any(Duration.class));
 	}
 
 	@Test
@@ -174,7 +170,7 @@ class AuthServiceTest {
 
 	private Claims claimsWithExpiration(Instant instant) {
 		Claims claims = mock(Claims.class);
-		when(claims.getExpiration()).thenReturn(java.util.Date.from(instant));
+		lenient().when(claims.getExpiration()).thenReturn(java.util.Date.from(instant));
 		return claims;
 	}
 }

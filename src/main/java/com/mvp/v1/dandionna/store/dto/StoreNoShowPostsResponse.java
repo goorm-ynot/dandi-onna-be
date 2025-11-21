@@ -9,7 +9,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record StoreNoShowPostsResponse(
 	StoreInfo store,
 	List<PostSummary> posts,
-	PageInfo page
+	PageInfo page,
+	boolean favorited
 ) {
 
 	@Schema(description = "매장 기본 정보")

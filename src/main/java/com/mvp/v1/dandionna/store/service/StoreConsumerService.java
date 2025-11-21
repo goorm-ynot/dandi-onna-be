@@ -18,6 +18,9 @@ import org.springframework.util.StringUtils;
 
 import com.mvp.v1.dandionna.common.dto.ErrorCode;
 import com.mvp.v1.dandionna.common.exeption.BusinessException;
+import com.mvp.v1.dandionna.common.service.SecurityUtils;
+import com.mvp.v1.dandionna.favorite.entity.FavoriteId;
+import com.mvp.v1.dandionna.favorite.repository.FavoriteRepository;
 import com.mvp.v1.dandionna.menu.entity.Menu;
 import com.mvp.v1.dandionna.menu.repository.MenuRepository;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPost;
@@ -38,11 +41,13 @@ public class StoreConsumerService {
 	private final NoShowPostRepository noShowPostRepository;
 	private final MenuRepository menuRepository;
 	private final UploadService uploadService;
+	private final FavoriteRepository favoriteRepository;
 
 	@Transactional(readOnly = true)
 	public StoreNoShowPostsResponse getNoShowPosts(UUID storeId, int page, int size) {
 		Store store = storeRepository.findById(storeId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "매장을 찾을 수 없습니다."));
+		UUID consumerId = SecurityUtils.getCurrentUserId();
 
 		int pageNumber = Math.max(page, 0);
 		int pageSize = size > 0 ? size : 10;
@@ -62,6 +67,8 @@ public class StoreConsumerService {
 			.map(post -> mapPost(post, menuMap.get(post.getMenuId())))
 			.toList();
 
+		boolean favorited = favoriteRepository.existsById(new FavoriteId(consumerId, storeId));
+
 		return new StoreNoShowPostsResponse(
 			mapStore(store),
 			posts,
@@ -71,7 +78,8 @@ public class StoreConsumerService {
 				postsPage.getTotalElements(),
 				postsPage.getTotalPages(),
 				postsPage.hasNext()
-			)
+			),
+			favorited
 		);
 	}
 

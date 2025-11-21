@@ -109,7 +109,7 @@ public class NoShowPostService {
 		OffsetDateTime startOfDay = targetDate.atStartOfDay(NoShowConstants.ZONE_KST).withZoneSameInstant(NoShowConstants.DB_ZONE).toOffsetDateTime();
 		OffsetDateTime endOfDay = targetDate.plusDays(1).atStartOfDay(NoShowConstants.ZONE_KST).withZoneSameInstant(NoShowConstants.DB_ZONE).toOffsetDateTime();
 
-		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "expireAt").and(Sort.by(Sort.Direction.ASC, "createdAt")));
+		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "expireAt").and(Sort.by(Sort.Direction.DESC, "createdAt")));
 		Page<NoShowPost> posts = noShowPostRepository.findByStoreIdAndExpireAtBetween(store.getId(), startOfDay, endOfDay, pageable);
 
 		Map<UUID, Menu> menuMap = loadMenus(store.getId(),

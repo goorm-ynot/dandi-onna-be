@@ -205,8 +205,7 @@ public class NoShowOrderConsumerService {
 		);
 		Map<String, String> data = new HashMap<>();
 		data.put("deeplink", "/seller/order");
-		data.put("orderId", String.valueOf(order.getId()));
-		data.put("storeId", store.getId().toString());
+		data.put("isconsumer", "false");
 		fcmNotificationService.sendToUser(store.getOwnerUserId(), title, body, data);
 	}
 

@@ -17,4 +17,6 @@ public interface FavoriteRepository extends JpaRepository<Favorite, FavoriteId> 
 
 	@Query("select f.id.consumerUserId from Favorite f where f.id.storeId = :storeId")
 	List<UUID> findConsumerIdsByStoreId(UUID storeId);
+
+	boolean existsByIdConsumerUserIdAndIdStoreId(UUID consumerUserId, UUID storeId);
 }

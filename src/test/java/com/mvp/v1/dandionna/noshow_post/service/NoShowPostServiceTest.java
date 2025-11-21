@@ -28,6 +28,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
+import com.mvp.v1.dandionna.favorite.service.FavoriteNotificationService;
 import com.mvp.v1.dandionna.menu.entity.Menu;
 import com.mvp.v1.dandionna.menu.repository.MenuRepository;
 import com.mvp.v1.dandionna.noshow_post.dto.NoShowBatchCreateRequest;
@@ -55,6 +56,8 @@ class NoShowPostServiceTest {
 	private NoShowPostRepository noShowPostRepository;
 	@Mock
 	private NoShowPostHistoryRepository historyRepository;
+	@Mock
+	private FavoriteNotificationService favoriteNotificationService;
 
 	@InjectMocks
 	private NoShowPostService noShowPostService;

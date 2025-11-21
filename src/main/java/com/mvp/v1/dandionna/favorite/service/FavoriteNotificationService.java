@@ -37,11 +37,12 @@ public class FavoriteNotificationService {
 		}
 		String[] message = pickMessage(store.getName(), menu.getName(), post.getPricePercent());
 		Map<String, String> data = new HashMap<>();
-		data.put("deeplink", "/consumer/store?storeId=" + store.getId());
+		data.put("deeplink", "/customer");
 		data.put("storeId", store.getId().toString());
 		data.put("menuId", menu.getId().toString());
 		data.put("postId", post.getId().toString());
 		data.put("visitTime", TIME_FORMATTER.format(post.getExpireAt().atZoneSameInstant(ZONE_KST)));
+		data.put("isconsumer", "true");
 
 		for (UUID consumerId : consumerIds) {
 			fcmNotificationService.sendToUser(consumerId, message[0], message[1], data);

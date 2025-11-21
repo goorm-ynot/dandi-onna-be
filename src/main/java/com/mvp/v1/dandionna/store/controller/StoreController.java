@@ -58,7 +58,7 @@ public class StoreController {
     public ResponseEntity<ApiResponse<Void>> delete() {
         UUID ownerId = SecurityUtils.getCurrentUserId();
         storeService.deleteStore(ownerId);
-        return ApiResponse.ok(null);
+        return ApiResponse.ok(null);		
     }
 
     @Operation(summary = "가게 정보 조회")
