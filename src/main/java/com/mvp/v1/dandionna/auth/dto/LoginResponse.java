@@ -1,7 +1,9 @@
 package com.mvp.v1.dandionna.auth.dto;
 
 import java.time.Instant;
-
+/**
+ * @author rua
+ */
 /**
  * 로그인 성공 시 내려갈 토큰 정보.
  */

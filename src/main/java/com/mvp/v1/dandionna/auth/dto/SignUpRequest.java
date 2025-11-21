@@ -7,6 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
+ * @author rua
+ */
+/**
  * 회원가입 요청 DTO.
  */
 public record SignUpRequest(

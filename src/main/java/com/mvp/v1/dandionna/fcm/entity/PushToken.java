@@ -74,6 +74,17 @@ public class PushToken {
 		touch();
 	}
 
+	public void updateDeviceInfo(Platform platform, String deviceId) {
+		this.platform = platform;
+		this.deviceId = deviceId;
+		touch();
+	}
+
+	public void reassignOwner(User user) {
+		this.user = user;
+		touch();
+	}
+
 	public void touch() {
 		this.lastSeenAt = OffsetDateTime.now();
 	}

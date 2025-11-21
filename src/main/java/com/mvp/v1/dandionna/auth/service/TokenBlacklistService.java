@@ -24,7 +24,7 @@ public class TokenBlacklistService {
 	}
 
 	public boolean isAccessTokenBlacklisted(String token) {
-		return Boolean.TRUE.equals(redisTemplate.hasKey(ACCESS_PREFIX + token));
+		return redisTemplate.hasKey(ACCESS_PREFIX + token);
 	}
 
 	public void removeAccessToken(String token) {
@@ -36,7 +36,7 @@ public class TokenBlacklistService {
 	}
 
 	public boolean isRefreshTokenBlacklisted(String token) {
-		return Boolean.TRUE.equals(redisTemplate.hasKey(REFRESH_PREFIX + token));
+		return redisTemplate.hasKey(REFRESH_PREFIX + token);
 	}
 
 	public void removeRefreshToken(String token) {

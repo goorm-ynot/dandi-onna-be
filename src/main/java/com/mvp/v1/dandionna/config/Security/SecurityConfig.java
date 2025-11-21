@@ -8,6 +8,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.mvp.v1.dandionna.auth.service.TokenBlacklistService;
 
@@ -37,7 +39,7 @@ public class SecurityConfig {
 			.csrf(csrf -> csrf.disable())
 			.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
-				.requestMatchers("/v1/api/auth/**").permitAll()
+				.requestMatchers("/api/v1/auth/**").permitAll()
 				.requestMatchers("/actuator/health",
 					"/swagger-ui.html", "/swagger-ui/**",
 					"/v3/api-docs/**", "/api-docs/**").permitAll()
@@ -48,5 +50,18 @@ public class SecurityConfig {
 			.httpBasic(httpBasic -> httpBasic.disable());
 
 		return http.build();
+	}
+
+	@Bean
+	public WebMvcConfigurer corsConfigurer() {
+		return new WebMvcConfigurer() {
+			@Override
+			public void addCorsMappings(CorsRegistry registry) {
+				registry.addMapping("/**")
+					.allowedOrigins("*")
+					.allowedMethods("*")
+					.allowedHeaders("*");
+			}
+		};
 	}
 }
