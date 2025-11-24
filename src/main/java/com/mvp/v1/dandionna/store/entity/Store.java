@@ -49,7 +49,7 @@ public class Store extends BaseEntity {
     @Column(nullable = false)
     private BigDecimal lon;
 
-    @Column(columnDefinition = "geometry(Point, 4326)", nullable = false)
+    @Column(columnDefinition = "geometry(Point, 4326)", insertable = false, updatable = false)
     private Point geom;
 
     @Column(name = "open_time", nullable = false)

@@ -60,6 +60,7 @@ public class AuthService {
 		userRepository.save(User.create(request.loginId(), encoded, request.role()));
 	}
 
+
 	@Transactional
 	public void logout(String accessToken, LogoutRequest request) {
 		Duration accessTtl = remainingTtl(accessToken);
