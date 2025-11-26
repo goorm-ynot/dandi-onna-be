@@ -44,6 +44,16 @@ public class SecurityConfig {
 					"/swagger-ui.html", "/swagger-ui/**",
 					"/v3/api-docs/**", "/api-docs/**").permitAll()
 				.requestMatchers(HttpMethod.GET, "/public/**").permitAll()
+				// 소비자 전용
+				.requestMatchers("/api/v1/home/**").hasRole("CONSUMER")
+				.requestMatchers(HttpMethod.GET, "/api/v1/stores/*/no-show-posts").hasRole("CONSUMER")
+				.requestMatchers("/api/v1/orders/**").hasRole("CONSUMER")
+				.requestMatchers("/api/v1/favorites/**").hasRole("CONSUMER")
+				// 사장님 전용
+				.requestMatchers("/api/v1/owner/**").hasRole("OWNER")
+				.requestMatchers("/api/v1/stores/**").hasRole("OWNER")
+				// 공통 인증 필요
+				.requestMatchers("/api/v1/push/**").authenticated()
 				.anyRequest().authenticated()
 			)
 				.addFilterBefore(new JweAuthFilter(tokens, blacklistService), UsernamePasswordAuthenticationFilter.class)

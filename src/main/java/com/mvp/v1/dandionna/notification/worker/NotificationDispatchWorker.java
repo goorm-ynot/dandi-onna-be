@@ -1,6 +1,7 @@
 package com.mvp.v1.dandionna.notification.worker;
 
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -12,8 +13,11 @@ import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.mvp.v1.dandionna.fcm.service.FcmNotificationService;
+import com.mvp.v1.dandionna.notification.entity.NotificationTarget;
+import com.mvp.v1.dandionna.notification.repository.NotificationTargetRepository;
 
 /**
  * Redis Stream 기반 알림 전송 워커 스켈레톤.
@@ -30,11 +34,14 @@ public class NotificationDispatchWorker {
 
 	private final StringRedisTemplate redisTemplate;
 	private final FcmNotificationService fcmNotificationService;
+	private final NotificationTargetRepository notificationTargetRepository;
 
 	public NotificationDispatchWorker(StringRedisTemplate redisTemplate,
-		FcmNotificationService fcmNotificationService) {
+		FcmNotificationService fcmNotificationService,
+		NotificationTargetRepository notificationTargetRepository) {
 		this.redisTemplate = redisTemplate;
 		this.fcmNotificationService = fcmNotificationService;
+		this.notificationTargetRepository = notificationTargetRepository;
 		ensureGroup();
 	}
 
@@ -49,7 +56,12 @@ public class NotificationDispatchWorker {
 	/**
 	 * 스켈레톤: 호출 시 한 번 읽어 처리. (스케줄러/배치에서 호출 예정)
 	 */
+	@Transactional
 	public void processOnce() {
+		// NOTE: 현재 비동기 전송 워커는 스켈레톤 상태입니다.
+		// - DB 상태 업데이트/재시도 로직은 구현되어 있지만,
+		// - 프로듀서가 Stream에 targetId 등을 enqueue하지 않은 상태라 실제 호출되지 않습니다.
+		// - 향후 프로듀서 연결 후 enable 하면 됩니다.
 		List<MapRecord<String, Object, Object>> records = redisTemplate.opsForStream().read(
 			org.springframework.data.redis.connection.stream.Consumer.from(GROUP, CONSUMER),
 			org.springframework.data.redis.connection.stream.StreamReadOptions.empty().count(10).block(Duration.ofSeconds(1)),
@@ -63,17 +75,39 @@ public class NotificationDispatchWorker {
 			try {
 				Map<Object, Object> values = record.getValue();
 				DispatchPayload payload = DispatchPayload.from(values);
-				log.debug("Dispatching notification record id={} payload={}", record.getId(), values);
-				boolean sent = fcmNotificationService.sendToUser(payload.userId, payload.title, payload.body, payload.data);
-				if (!sent && payload.attempt < 3) {
-					int nextAttempt = payload.attempt + 1;
-					int backoffSec = backoffSeconds(nextAttempt);
-					try {
-						Thread.sleep(backoffSec * 1000L);
-					} catch (InterruptedException ignored) {
-						Thread.currentThread().interrupt();
+				if (payload == null) {
+					continue;
+				}
+				NotificationTarget target = payload.targetId() != null
+					? notificationTargetRepository.findById(payload.targetId()).orElse(null)
+					: null;
+				UUID targetUserId = target != null ? target.getUserId() : payload.userId();
+				int attemptFromDb = target != null ? target.getAttemptCount() : payload.attempt();
+
+				log.debug("Dispatching notification targetId={} payload={}", payload.targetId(), values);
+				boolean sent = fcmNotificationService.sendToUser(targetUserId, payload.title(), payload.body(), payload.data());
+				if (sent) {
+					if (target != null) {
+						notificationTargetRepository.markSuccess(payload.targetId(), null);
 					}
-					requeue(payload, nextAttempt);
+					continue;
+				}
+				int nextAttempt = attemptFromDb + 1;
+				int backoffSec = backoffSeconds(nextAttempt);
+				String status = nextAttempt > 3 ? "FAILED" : "QUEUED";
+				OffsetDateTime nextRetryAt = status.equals("FAILED") ? null : OffsetDateTime.now().plusSeconds(backoffSec);
+				if (target != null) {
+					notificationTargetRepository.markFailure(
+						payload.targetId(),
+						status,
+						nextAttempt,
+						"FCM_FAILED",
+						"FCM send failed",
+						nextRetryAt
+					);
+				}
+				if ("QUEUED".equals(status)) {
+					requeue(payload, nextAttempt, nextRetryAt);
 				}
 			} catch (Exception e) {
 				log.warn("Failed to process notification record id={}: {}", record.getId(), e.getMessage());
@@ -91,20 +125,30 @@ public class NotificationDispatchWorker {
 		};
 	}
 
-	private void requeue(DispatchPayload payload, int attempt) {
+	private void requeue(DispatchPayload payload, int attempt, OffsetDateTime nextRetryAt) {
 		Map<String, String> map = new java.util.HashMap<>();
-		map.put("userId", payload.userId.toString());
-		map.put("title", payload.title);
-		map.put("body", payload.body);
+		if (payload.targetId() != null) {
+			map.put("targetId", payload.targetId().toString());
+		}
+		map.put("userId", payload.userId().toString());
+		map.put("title", payload.title());
+		map.put("body", payload.body());
 		map.put("attempt", String.valueOf(attempt));
-		if (payload.data != null) {
-			payload.data.forEach((k, v) -> map.put("data." + k, v));
+		if (nextRetryAt != null) {
+			map.put("nextRetryAt", nextRetryAt.toString());
+		}
+		if (payload.data() != null) {
+			payload.data().forEach((k, v) -> map.put("data." + k, v));
 		}
 		redisTemplate.opsForStream().add(STREAM_KEY, map);
 	}
 
-	private record DispatchPayload(UUID userId, String title, String body, Map<String, String> data, int attempt) {
+	private record DispatchPayload(Long targetId, UUID userId, String title, String body, Map<String, String> data, int attempt) {
 		static DispatchPayload from(Map<Object, Object> map) {
+			if (map.get("userId") == null) {
+				return null;
+			}
+			Long targetId = map.get("targetId") != null ? Long.valueOf(String.valueOf(map.get("targetId"))) : null;
 			UUID userId = UUID.fromString(String.valueOf(map.get("userId")));
 			String title = String.valueOf(map.getOrDefault("title", ""));
 			String body = String.valueOf(map.getOrDefault("body", ""));
@@ -126,7 +170,7 @@ public class NotificationDispatchWorker {
 					data.put(key.substring(5), String.valueOf(entry.getValue()));
 				}
 			}
-			return new DispatchPayload(userId, title, body, data.isEmpty() ? null : data, attempt);
+			return new DispatchPayload(targetId, userId, title, body, data.isEmpty() ? null : data, attempt);
 		}
 	}
 }
