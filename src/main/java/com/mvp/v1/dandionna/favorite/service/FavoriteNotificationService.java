@@ -16,6 +16,7 @@ import com.mvp.v1.dandionna.fcm.service.FcmNotificationService;
 import com.mvp.v1.dandionna.menu.entity.Menu;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPost;
 import com.mvp.v1.dandionna.store.entity.Store;
+import com.mvp.v1.dandionna.notification.service.NotificationEnqueueService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +30,7 @@ public class FavoriteNotificationService {
 
 	private final FavoriteRepository favoriteRepository;
 	private final FcmNotificationService fcmNotificationService;
+	private final NotificationEnqueueService notificationEnqueueService;
 
 	public void notifyNoShowPost(Store store, Menu menu, NoShowPost post) {
 		List<UUID> consumerIds = favoriteRepository.findConsumerIdsByStoreId(store.getId());
@@ -45,7 +47,9 @@ public class FavoriteNotificationService {
 		data.put("isconsumer", "true");
 
 		for (UUID consumerId : consumerIds) {
-			fcmNotificationService.sendToUser(consumerId, message[0], message[1], data);
+			// 기존 동기 알림은 주석만 유지 (이중 전송 방지용)
+			// fcmNotificationService.sendToUser(consumerId, message[0], message[1], data);
+			notificationEnqueueService.enqueue(consumerId, message[0], message[1], data);
 		}
 	}
 

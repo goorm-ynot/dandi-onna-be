@@ -34,6 +34,7 @@ import com.mvp.v1.dandionna.noshow_order.repository.NoShowOrderRepository;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPost;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPostStatus;
 import com.mvp.v1.dandionna.noshow_post.repository.NoShowPostRepository;
+import com.mvp.v1.dandionna.notification.service.NotificationEnqueueService;
 import com.mvp.v1.dandionna.store.entity.Store;
 import com.mvp.v1.dandionna.store.repository.StoreRepository;
 
@@ -53,6 +54,7 @@ public class NoShowOrderConsumerService {
 	private final NoShowOrderRepository noShowOrderRepository;
 	private final ConsumerProfileRepository consumerProfileRepository;
 	private final FcmNotificationService fcmNotificationService;
+	private final NotificationEnqueueService notificationEnqueueService;
 
 	@Transactional
 	public NoShowOrderCreateResponse createOrder(UUID consumerId, NoShowOrderCreateRequest request) {
@@ -206,7 +208,9 @@ public class NoShowOrderConsumerService {
 		Map<String, String> data = new HashMap<>();
 		data.put("deeplink", "/seller/order");
 		data.put("isconsumer", "false");
-		fcmNotificationService.sendToUser(store.getOwnerUserId(), title, body, data);
+		// 기존 동기 알림은 주석만 유지 (이중 전송 방지용)
+		// fcmNotificationService.sendToUser(store.getOwnerUserId(), title, body, data);
+		notificationEnqueueService.enqueue(store.getOwnerUserId(), title, body, data);
 	}
 
 	private record Line(NoShowPost post, Menu menu, int quantity, int unitPrice) {}
