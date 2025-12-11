@@ -41,8 +41,9 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5") // JSON 직렬화
     // (JWE용 AES/GCM 등 키는 환경변수로 주입)
 
-    implementation platform('software.amazon.awssdk:bom:2.25.28')
+    implementation platform('software.amazon.awssdk:bom:2.29.0')
     implementation 'software.amazon.awssdk:s3'       // S3 + Presigner
+    implementation 'software.amazon.awssdk:apache-client' // HTTP Client for MinIO compatibility
     implementation 'software.amazon.awssdk:auth'     // 자격 증명 체인
 
     // FCM
@@ -53,7 +54,7 @@ dependencies {
     implementation("org.apache.commons:commons-lang3:3.18.0")
 
     compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	// developmentOnly 'org.springframework.boot:spring-boot-devtools'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
 
     implementation("org.hibernate.orm:hibernate-spatial") // PostGIS 지원
