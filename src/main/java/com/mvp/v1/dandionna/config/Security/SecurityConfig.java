@@ -43,7 +43,11 @@ public class SecurityConfig {
 				.requestMatchers("/actuator/health",
 					"/swagger-ui.html", "/swagger-ui/**",
 					"/v3/api-docs/**", "/api-docs/**").permitAll()
-				.requestMatchers(HttpMethod.GET, "/public/**").permitAll()
+				.requestMatchers(HttpMethod.GET,
+					"/public/**",
+					"/store-admin.html",
+					"/static/**",
+					"/favicon.ico").permitAll()
 				// 소비자 전용
 				.requestMatchers("/api/v1/home/**").hasRole("CONSUMER")
 				.requestMatchers(HttpMethod.GET, "/api/v1/stores/*/no-show-posts").hasRole("CONSUMER")
