@@ -63,3 +63,5 @@ application.yaml
 .vscode/
 
 /doc/**
+/docs/**
+/.agent/**
