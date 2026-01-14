@@ -64,4 +64,6 @@ application.yaml
 
 /doc/**
 /docs/**
+!/docs/PROJECT_LOG.md
+!/docs/analysis/
 /.agent/**

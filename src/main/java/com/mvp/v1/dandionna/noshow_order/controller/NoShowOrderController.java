@@ -19,6 +19,7 @@ import com.mvp.v1.dandionna.common.service.SecurityUtils;
 import com.mvp.v1.dandionna.noshow_order.dto.NoShowOrderCompleteRequest;
 import com.mvp.v1.dandionna.noshow_order.dto.NoShowOrderDetailResponse;
 import com.mvp.v1.dandionna.noshow_order.dto.NoShowOrderListResponse;
+import com.mvp.v1.dandionna.noshow_order.entity.NoShowOrderStatus;
 import com.mvp.v1.dandionna.noshow_order.service.NoShowOrderService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,7 +43,33 @@ public class NoShowOrderController {
 		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
 	) {
 		UUID ownerId = SecurityUtils.getCurrentUserId();
-		NoShowOrderListResponse response = noShowOrderService.listOrders(ownerId, page, size, date);
+		NoShowOrderListResponse response = noShowOrderService.listOrders(ownerId, page, size, date, null);
+		return ApiResponse.ok(response);
+	}
+
+	@Operation(summary = "노쇼 주문 목록 조회 (대기 중)")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/pending")
+	public ResponseEntity<ApiResponse<NoShowOrderListResponse>> listPending(
+		@RequestParam(defaultValue = "0") int page,
+		@RequestParam(defaultValue = "10") int size,
+		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+	) {
+		UUID ownerId = SecurityUtils.getCurrentUserId();
+		NoShowOrderListResponse response = noShowOrderService.listOrders(ownerId, page, size, date, NoShowOrderStatus.PENDING);
+		return ApiResponse.ok(response);
+	}
+
+	@Operation(summary = "노쇼 주문 목록 조회 (완료)")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/completed")
+	public ResponseEntity<ApiResponse<NoShowOrderListResponse>> listCompleted(
+		@RequestParam(defaultValue = "0") int page,
+		@RequestParam(defaultValue = "10") int size,
+		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+	) {
+		UUID ownerId = SecurityUtils.getCurrentUserId();
+		NoShowOrderListResponse response = noShowOrderService.listOrders(ownerId, page, size, date, NoShowOrderStatus.COMPLETED);
 		return ApiResponse.ok(response);
 	}
 
