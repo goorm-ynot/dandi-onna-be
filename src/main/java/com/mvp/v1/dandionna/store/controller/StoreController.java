@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mvp.v1.dandionna.common.dto.ApiResponse;
 import com.mvp.v1.dandionna.common.service.SecurityUtils;
 import com.mvp.v1.dandionna.store.dto.StoreCreateRequest;
+import com.mvp.v1.dandionna.store.dto.StoreMyPageResponse;
 import com.mvp.v1.dandionna.store.dto.StoreResponse;
 import com.mvp.v1.dandionna.store.dto.StoreUpdateRequest;
 import com.mvp.v1.dandionna.store.service.StoreService;
@@ -69,4 +70,13 @@ public class StoreController {
         StoreResponse response = storeService.getStoreForOwner(ownerId);
         return ApiResponse.ok(response);
     }
+
+	@Operation(summary = "사장님 마이페이지 가게 요약")
+	@SecurityRequirement(name = "bearerAuth")
+	@GetMapping("/me/mypage")
+	public ResponseEntity<ApiResponse<StoreMyPageResponse>> getMyPageSummary() {
+		UUID ownerId = SecurityUtils.getCurrentUserId();
+		StoreMyPageResponse response = storeService.getMyPageForOwner(ownerId);
+		return ApiResponse.ok(response);
+	}
 }

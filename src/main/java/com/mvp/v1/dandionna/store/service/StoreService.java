@@ -11,11 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.mvp.v1.dandionna.common.dto.ErrorCode;
 import com.mvp.v1.dandionna.common.exeption.BusinessException;
 import com.mvp.v1.dandionna.store.dto.StoreCreateRequest;
+import com.mvp.v1.dandionna.store.dto.StoreMyPageResponse;
 import com.mvp.v1.dandionna.store.dto.StoreResponse;
 import com.mvp.v1.dandionna.store.dto.StoreUpdateRequest;
 import com.mvp.v1.dandionna.store.entity.ImageStatus;
 import com.mvp.v1.dandionna.store.entity.Store;
 import com.mvp.v1.dandionna.store.repository.StoreRepository;
+import com.mvp.v1.dandionna.owner.repository.OwnerProfileRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class StoreService {
 
 	private final StoreRepository storeRepository;
+	private final OwnerProfileRepository ownerProfileRepository;
 
 	@Transactional
 	public StoreResponse createStore(UUID ownerId, StoreCreateRequest request) {
@@ -58,6 +61,15 @@ public class StoreService {
 	@Transactional(readOnly = true)
 	public StoreResponse getStoreForOwner(UUID ownerId) {
 		return StoreResponse.from(getStoreByOwner(ownerId));
+	}
+
+	@Transactional(readOnly = true)
+	public StoreMyPageResponse getMyPageForOwner(UUID ownerId) {
+		Store store = getStoreByOwner(ownerId);
+		String ownerName = ownerProfileRepository.findByUserId(ownerId)
+			.map(profile -> profile.getName())
+			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사장님 정보를 찾을 수 없습니다."));
+		return StoreMyPageResponse.from(store, ownerName);
 	}
 
 	@Transactional
