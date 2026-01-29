@@ -14,7 +14,7 @@ import org.springframework.data.repository.query.Param;
 import com.mvp.v1.dandionna.noshow_order.entity.NoShowOrder;
 import com.mvp.v1.dandionna.noshow_order.entity.NoShowOrderStatus;
 
-public interface NoShowOrderRepository extends JpaRepository<NoShowOrder, Long> {
+public interface NoShowOrderRepository extends JpaRepository<NoShowOrder, UUID> {
 
 	Page<NoShowOrder> findByStoreId(UUID storeId, Pageable pageable);
 
@@ -26,6 +26,9 @@ public interface NoShowOrderRepository extends JpaRepository<NoShowOrder, Long> 
 	Page<NoShowOrder> findByStoreIdAndStatusAndVisitTimeBetween(UUID storeId, NoShowOrderStatus status,
 		OffsetDateTime start, OffsetDateTime end, Pageable pageable);
 
+	Page<NoShowOrder> findByStoreIdAndCreatedAtBetween(UUID storeId, OffsetDateTime start, OffsetDateTime end,
+		Pageable pageable);
+
 	Page<NoShowOrder> findByConsumerIdAndStatusAndVisitTimeBetween(UUID consumerId, NoShowOrderStatus status,
 		OffsetDateTime start, OffsetDateTime end, Pageable pageable);
 
@@ -33,5 +36,7 @@ public interface NoShowOrderRepository extends JpaRepository<NoShowOrder, Long> 
 		OffsetDateTime start, OffsetDateTime end, Pageable pageable);
 
 	@Query("select distinct o from NoShowOrder o left join fetch o.items where o.id = :orderId")
-	Optional<NoShowOrder> findByIdWithItems(@Param("orderId") Long orderId);
+	Optional<NoShowOrder> findByIdWithItems(@Param("orderId") UUID orderId);
+
+	boolean existsByOrderNo(String orderNo);
 }

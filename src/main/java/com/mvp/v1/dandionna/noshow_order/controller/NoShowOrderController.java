@@ -77,7 +77,7 @@ public class NoShowOrderController {
 	@SecurityRequirement(name = "bearerAuth")
 	@GetMapping("/{orderId}")
 	public ResponseEntity<ApiResponse<NoShowOrderDetailResponse>> detail(
-		@PathVariable Long orderId
+		@PathVariable UUID orderId
 	) {
 		UUID ownerId = SecurityUtils.getCurrentUserId();
 		NoShowOrderDetailResponse response = noShowOrderService.getOrderDetail(ownerId, orderId);
@@ -88,7 +88,7 @@ public class NoShowOrderController {
 	@SecurityRequirement(name = "bearerAuth")
 	@PostMapping("/{orderId}/complete")
 	public ResponseEntity<ApiResponse<Void>> complete(
-		@PathVariable Long orderId,
+		@PathVariable UUID orderId,
 		@RequestBody(required = false) NoShowOrderCompleteRequest request
 	) {
 		UUID ownerId = SecurityUtils.getCurrentUserId();

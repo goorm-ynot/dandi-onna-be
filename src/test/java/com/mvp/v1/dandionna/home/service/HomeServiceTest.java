@@ -48,8 +48,8 @@ class HomeServiceTest {
 		UUID consumerId = UUID.randomUUID();
 		OffsetDateTime base = OffsetDateTime.now(ZoneId.of("Asia/Seoul"));
 
-		NoShowOrder pending = createOrder(1L, consumerId, NoShowOrderStatus.PENDING, base.plusHours(1));
-		NoShowOrder completed = createOrder(2L, consumerId, NoShowOrderStatus.COMPLETED, base.plusHours(2));
+		NoShowOrder pending = createOrder(UUID.randomUUID(), consumerId, NoShowOrderStatus.PENDING, base.plusHours(1));
+		NoShowOrder completed = createOrder(UUID.randomUUID(), consumerId, NoShowOrderStatus.COMPLETED, base.plusHours(2));
 
 		when(noShowOrderRepository.findByConsumerIdAndStatusAndVisitTimeBetween(
 			org.mockito.ArgumentMatchers.eq(consumerId),
@@ -87,7 +87,7 @@ class HomeServiceTest {
 		verify(uploadService, never()).presignDownload(null);
 	}
 
-	private NoShowOrder createOrder(Long id, UUID consumerId, NoShowOrderStatus status, OffsetDateTime visitTime) {
+	private NoShowOrder createOrder(UUID id, UUID consumerId, NoShowOrderStatus status, OffsetDateTime visitTime) {
 		NoShowOrder order = NoShowOrder.create(consumerId, UUID.randomUUID(), 10000, visitTime, null);
 		order.setStatus(status);
 		order.setMenuNames("세트(1)");

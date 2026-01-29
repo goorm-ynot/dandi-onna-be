@@ -13,8 +13,8 @@ public record HomeResponse(
 
 	@Schema(description = "홈 - 내가 주문한 가게 정보")
 	public record MyOrder(
-		@Schema(description = "주문 ID", example = "123")
-		Long orderId,
+		@Schema(description = "주문 ID")
+		UUID orderId,
 		@Schema(description = "매장 ID")
 		UUID storeId,
 		@Schema(description = "매장 이름", example = "청자 소반 백현동점")
