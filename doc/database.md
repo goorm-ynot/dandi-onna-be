@@ -14,6 +14,7 @@
 - **favorites**: 소비자 즐겨찾기(store_id, consumer_user_id)
 - **push_tokens**: FCM 토큰(플랫폼/디바이스/토큰)
 - **notifications / notification_targets**: 알림 발송 이력, 재시도/상태 관리
+- **export_jobs**: 엑셀 내보내기 작업 이력(요청 해시, 상태, file_key, 만료)
 
 ## ERD (요약 Mermaid)
 ```mermaid
@@ -25,6 +26,8 @@ erDiagram
   users ||--o{ notifications : creates
   notifications ||--o{ notification_targets : targets
   users ||--o{ notification_targets : receives
+  users ||--o{ export_jobs : requests
+  stores ||--o{ export_jobs : exports
 
   stores ||--|| owner_profiles : owned_by
   stores ||--o{ menus : has
@@ -44,3 +47,5 @@ erDiagram
 - **no_show_orders.payment_status**: PENDING/PAID/FAILED/REFUNDED
 - **notification_targets.status**: QUEUED/SENT/FAILED 등 상태 관리 (상세는 구현 정책 기준)
 - **stores.geom**: `lat/lon` 기반 GENERATED column (PostGIS)
+- **export_jobs.request_hash**: 동일 요청 제어용 SHA-256
+- **export_jobs.file_key**: 엑셀 파일 객체 스토리지 경로

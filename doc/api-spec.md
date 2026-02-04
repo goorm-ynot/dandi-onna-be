@@ -26,6 +26,45 @@
 
 ## 매출 (사장님)
 - `GET /api/v1/owner/sales?startDate=YYYY.MM.DD&endDate=YYYY.MM.DD&page&size`
+- `POST /api/v1/owner/sales/export` (비동기 엑셀 생성 요청)
+- `GET /api/v1/owner/sales/export/{jobId}` (폴링 상태 조회/다운로드 URL)
+- `POST /api/v1/owner/sales/export/{jobId}/refresh` (다운로드 URL 재발급)
+
+## 매출 엑셀(준비)
+- 엑셀 발행 시 **기본=1행=1주문(요약)** 기준. 필요 시 **1행=1아이템(상세)** 옵션 제공.
+- 결제 금액은 서버에서 **10원 단위 반올림** 기준으로 검증/저장됨
+- `paid_at`이 없으면 공란(미결제/미확정)으로 표기
+- 비동기 엑셀 다운로드: **폴링 방식**(jobId → 상태 확인 → presigned URL)
+- URL TTL 10분, Redis 캐시 TTL 15분, 파일 보관 7일
+- 동일 요청은 **요청 해시(SHA-256)** 기반으로 중복 생성 방지(기존 jobId 반환)
+
+### 기본(1행=1주문, 요약)
+| 필드 | 소스 | 비고 |
+| --- | --- | --- |
+| 주문번호 | `no_show_orders.order_no` | 카드사 대조/고객 응대용 |
+| 결제일시 | `no_show_orders.paid_at` | 없으면 공란 |
+| 원래 예약시간 | `no_show_orders.visit_time` | 노쇼 분석용 |
+| 주문유형 | 상수 `"NO_SHOW"` | 현재 노쇼 판매만 존재 |
+| 메뉴명(요약) | `no_show_orders.menu_names` | `name1(qty1), name2(qty2)…` |
+| 최종 결제 금액 | `no_show_orders.paid_amount` | 소비자가 실제 낸 금액 |
+| 결제 수단 | `no_show_orders.payment_method` | CARD/현금/간편결제 등 |
+| 주문 상태 | `no_show_orders.status` | 완료/취소 등 |
+| 공급가액 | 계산 | `paid_amount` 기준 10% VAT 역산 |
+| 부가세 | 계산 | `paid_amount - 공급가액` |
+
+### 상세(1행=1아이템, 옵션)
+| 필드 | 소스 | 비고 |
+| --- | --- | --- |
+| 주문번호 | `no_show_orders.order_no` | 주문 단위 식별 |
+| 결제일시 | `no_show_orders.paid_at` | 없으면 공란 |
+| 원래 예약시간 | `no_show_orders.visit_time` | 주문 기준 |
+| 주문유형 | 상수 `"NO_SHOW"` |  |
+| 메뉴명 | `no_show_order_items.menu_name` | 주문 당시 스냅샷 |
+| 수량 | `no_show_order_items.quantity` | 메뉴별 |
+| 할인율(%) | `no_show_order_items.discount_percent` | 메뉴별 |
+| 원가(단가) | `no_show_order_items.unit_price` | 할인 전 단가 |
+| 결제 수단 | `no_show_orders.payment_method` |  |
+| 주문 상태 | `no_show_orders.status` |  |
 
 ## 소비자 홈/매장
 - `GET /api/v1/home` : 오늘 기준 내 주문(최대 3건, PENDING 우선)

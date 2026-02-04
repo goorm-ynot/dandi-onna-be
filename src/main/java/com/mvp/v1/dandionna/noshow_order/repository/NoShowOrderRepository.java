@@ -1,6 +1,7 @@
 package com.mvp.v1.dandionna.noshow_order.repository;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,6 +29,8 @@ public interface NoShowOrderRepository extends JpaRepository<NoShowOrder, UUID> 
 
 	Page<NoShowOrder> findByStoreIdAndCreatedAtBetween(UUID storeId, OffsetDateTime start, OffsetDateTime end,
 		Pageable pageable);
+
+	List<NoShowOrder> findByStoreIdAndCreatedAtBetween(UUID storeId, OffsetDateTime start, OffsetDateTime end);
 
 	Page<NoShowOrder> findByConsumerIdAndStatusAndVisitTimeBetween(UUID consumerId, NoShowOrderStatus status,
 		OffsetDateTime start, OffsetDateTime end, Pageable pageable);

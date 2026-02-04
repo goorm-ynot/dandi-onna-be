@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.core.sync.RequestBody;
 
 @Service
 @RequiredArgsConstructor
@@ -89,6 +90,29 @@ public class UploadService {
 		);
 	}
 
+	public PresignedUrlResponse presignDownloadWithTtl(String key, long ttlSeconds) {
+		if (!StringUtils.hasText(key)) {
+			throw new BusinessException(ErrorCode.NOT_FOUND, "등록된 이미지가 없습니다.");
+		}
+		GetObjectRequest objectRequest = GetObjectRequest.builder()
+			.bucket(bucket)
+			.key(key)
+			.build();
+
+		GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+			.signatureDuration(Duration.ofSeconds(ttlSeconds))
+			.getObjectRequest(objectRequest)
+			.build();
+
+		PresignedGetObjectRequest presigned = presigner.presignGetObject(presignRequest);
+
+		return new PresignedUrlResponse(
+			presigned.url().toString(),
+			key,
+			ttlSeconds
+		);
+	}
+
 	public S3Metadata confirm(UploadTarget target, String referenceId, UploadConfirmRequest request) {
 		// 1. 경로 검증
 		String expectedPrefix = folderFor(target) + "/" + sanitize(referenceId);
@@ -115,6 +139,21 @@ public class UploadService {
 		} catch (NoSuchKeyException e) {
 			throw new BusinessException(ErrorCode.NOT_FOUND, "S3에 파일 없음");
 		}
+	}
+
+	public void uploadBytes(String key, byte[] bytes, String contentType) {
+		if (!StringUtils.hasText(key)) {
+			throw new BusinessException(ErrorCode.BAD_REQUEST, "key 가 필요합니다.");
+		}
+		if (bytes == null || bytes.length == 0) {
+			throw new BusinessException(ErrorCode.BAD_REQUEST, "업로드할 데이터가 없습니다.");
+		}
+		PutObjectRequest request = PutObjectRequest.builder()
+			.bucket(bucket)
+			.key(key)
+			.contentType(contentType)
+			.build();
+		s3Client.putObject(request, RequestBody.fromBytes(bytes));
 	}
 
 	private void validateReference(String referenceId) {

@@ -14,6 +14,8 @@ flowchart LR
     Upload[UploadService]
     NotifyEnq[NotificationEnqueueService]
     Worker[NotificationDispatchWorker]
+    ExportEnq[ExportEnqueueService]
+    ExportWorker[ExportDispatchWorker]
   end
 
   subgraph Infra
@@ -35,6 +37,10 @@ Presign)]
   Redis --> Worker --> FCMApi
   FCMApi --> Client
 
+  Service --> ExportEnq --> DB
+  ExportEnq --> Redis
+  Redis --> ExportWorker --> S3
+
   API --> Redis
 ```
 
@@ -43,3 +49,4 @@ Presign)]
 - 노쇼 주문/즐겨찾기 알림 → **Redis Stream** 큐 → 워커가 FCM 전송
 - 이미지 업로드: Presign → 클라이언트 업로드 → Confirm/ETag 검증
 - Redis는 토큰 블랙리스트 및 알림 큐에 사용
+- 매출 엑셀 내보내기: **비동기 작업(ExportJob)** → Redis Stream → 워커가 파일 생성 후 Presign URL 제공
