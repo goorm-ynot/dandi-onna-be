@@ -59,6 +59,7 @@ public class NoShowOrderService {
 		List<NoShowOrderListResponse.OrderSummary> summaries = orders.stream()
 			.map(order -> new NoShowOrderListResponse.OrderSummary(
 				order.getId(),
+				order.getOrderNo(),
 				order.getVisitTime(),
 				order.getStatus(),
 				order.getMenuNames(),
@@ -78,7 +79,7 @@ public class NoShowOrderService {
 	}
 
 	@Transactional(readOnly = true)
-	public NoShowOrderDetailResponse getOrderDetail(UUID ownerId, Long orderId) {
+	public NoShowOrderDetailResponse getOrderDetail(UUID ownerId, UUID orderId) {
 		Store store = storeRepository.findByOwnerUserId(ownerId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "매장을 찾을 수 없습니다."));
 
@@ -93,6 +94,7 @@ public class NoShowOrderService {
 
 		return new NoShowOrderDetailResponse(
 			order.getId(),
+			order.getOrderNo(),
 			order.getConsumerId(),
 			order.getStoreId(),
 			order.getVisitTime(),
@@ -113,7 +115,7 @@ public class NoShowOrderService {
 	}
 
 	@Transactional
-	public void completeOrder(UUID ownerId, Long orderId, NoShowOrderCompleteRequest request) {
+	public void completeOrder(UUID ownerId, UUID orderId, NoShowOrderCompleteRequest request) {
 		Store store = storeRepository.findByOwnerUserId(ownerId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "매장을 찾을 수 없습니다."));
 

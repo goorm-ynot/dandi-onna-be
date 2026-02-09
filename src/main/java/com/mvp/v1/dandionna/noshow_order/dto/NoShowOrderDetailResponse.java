@@ -11,8 +11,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "노쇼 주문 상세 응답")
 public record NoShowOrderDetailResponse(
-	@Schema(description = "주문 ID", example = "1")
-	Long orderId,
+	@Schema(description = "주문 ID")
+	UUID orderId,
+	@Schema(description = "주문 번호", example = "NS-20251202-9K3A1F")
+	String orderNo,
 	@Schema(description = "소비자 사용자 ID")
 	UUID consumerId,
 	@Schema(description = "매장 ID")

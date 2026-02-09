@@ -27,8 +27,8 @@ import jakarta.persistence.Table;
 public class NoShowOrder extends BaseEntity {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 
 	@Column(name = "consumer_id", nullable = false)
 	private UUID consumerId;
@@ -52,6 +52,9 @@ public class NoShowOrder extends BaseEntity {
 
 	@Column(name = "menu_names")
 	private String menuNames;
+
+	@Column(name = "order_no", nullable = false)
+	private String orderNo;
 
 	@Column(name = "payment_method", nullable = false)
 	private String paymentMethod = "TEST_CARD";
@@ -110,8 +113,16 @@ public class NoShowOrder extends BaseEntity {
 		item.setOrder(null);
 	}
 
-	public Long getId() {
+	public UUID getId() {
 		return id;
+	}
+
+	public String getOrderNo() {
+		return orderNo;
+	}
+
+	public void setOrderNo(String orderNo) {
+		this.orderNo = orderNo;
 	}
 
 	public UUID getConsumerId() {

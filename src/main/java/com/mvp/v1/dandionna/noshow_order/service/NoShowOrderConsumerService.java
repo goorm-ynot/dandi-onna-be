@@ -1,6 +1,7 @@
 package com.mvp.v1.dandionna.noshow_order.service;
 
 import java.text.NumberFormat;
+import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -47,6 +48,9 @@ public class NoShowOrderConsumerService {
 	private static final ZoneId ZONE_KST = ZoneId.of("Asia/Seoul");
 	private static final DateTimeFormatter VISIT_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 		.withZone(ZONE_KST);
+	private static final DateTimeFormatter ORDER_NO_DATE = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ZONE_KST);
+	private static final char[] ORDER_NO_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+	private static final SecureRandom ORDER_NO_RANDOM = new SecureRandom();
 
 	private final StoreRepository storeRepository;
 	private final NoShowPostRepository noShowPostRepository;
@@ -114,6 +118,7 @@ public class NoShowOrderConsumerService {
 		}
 
 		NoShowOrder order = NoShowOrder.create(consumerId, storeId, originalExpected, visitTime, null);
+		order.setOrderNo(generateUniqueOrderNo());
 		order.setPaymentMethod(request.paymentMethod());
 		order.setPaymentStatus(NoShowPaymentStatus.PAID);
 		order.setTotalPrice(originalExpected);
@@ -142,6 +147,7 @@ public class NoShowOrderConsumerService {
 
 		return new NoShowOrderCreateResponse(
 			saved.getId(),
+			saved.getOrderNo(),
 			saved.getStatus(),
 			saved.getPaymentStatus(),
 			saved.getPaidAmount(),
@@ -198,8 +204,8 @@ public class NoShowOrderConsumerService {
 		String consumerPhone = consumerProfile != null ? consumerProfile.getPhone() : "미등록";
 		String title = String.format("[노쇼 주문] %s 님이 주문했어요", consumerName);
 
-		String body = String.format("주문번호 #%d, %s, 결제 %s원, 방문 %s, 연락처 %s",
-			order.getId(),
+		String body = String.format("주문번호 %s, %s, 결제 %s원, 방문 %s, 연락처 %s",
+			order.getOrderNo(),
 			order.getMenuNames(),
 			NumberFormat.getInstance(Locale.KOREA).format(order.getPaidAmount()),
 			VISIT_TIME_FORMATTER.format(order.getVisitTime().atZoneSameInstant(ZONE_KST)),
@@ -211,6 +217,29 @@ public class NoShowOrderConsumerService {
 		// 기존 동기 알림은 주석만 유지 (이중 전송 방지용)
 		// fcmNotificationService.sendToUser(store.getOwnerUserId(), title, body, data);
 		notificationEnqueueService.enqueue(store.getOwnerUserId(), title, body, data);
+	}
+
+	private String generateUniqueOrderNo() {
+		for (int attempt = 0; attempt < 5; attempt++) {
+			String orderNo = generateOrderNo();
+			if (!noShowOrderRepository.existsByOrderNo(orderNo)) {
+				return orderNo;
+			}
+		}
+		throw new BusinessException(ErrorCode.INTERNAL_ERROR, "주문 번호 생성에 실패했습니다.");
+	}
+
+	private String generateOrderNo() {
+		String date = ORDER_NO_DATE.format(OffsetDateTime.now(ZONE_KST));
+		return "NS-" + date + "-" + randomOrderSuffix(6);
+	}
+
+	private String randomOrderSuffix(int length) {
+		StringBuilder builder = new StringBuilder(length);
+		for (int i = 0; i < length; i++) {
+			builder.append(ORDER_NO_CHARS[ORDER_NO_RANDOM.nextInt(ORDER_NO_CHARS.length)]);
+		}
+		return builder.toString();
 	}
 
 	private record Line(NoShowPost post, Menu menu, int quantity, int unitPrice) {}
