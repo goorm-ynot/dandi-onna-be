@@ -31,6 +31,7 @@ import com.mvp.v1.dandionna.noshow_order.dto.NoShowOrderCreateResponse;
 import com.mvp.v1.dandionna.noshow_order.entity.NoShowOrder;
 import com.mvp.v1.dandionna.noshow_order.entity.NoShowOrderItem;
 import com.mvp.v1.dandionna.noshow_order.entity.NoShowPaymentStatus;
+import com.mvp.v1.dandionna.noshow_order.repository.NoShowOrderItemRepository;
 import com.mvp.v1.dandionna.noshow_order.repository.NoShowOrderRepository;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPost;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPostStatus;
@@ -56,6 +57,7 @@ public class NoShowOrderConsumerService {
 	private final NoShowPostRepository noShowPostRepository;
 	private final MenuRepository menuRepository;
 	private final NoShowOrderRepository noShowOrderRepository;
+	private final NoShowOrderItemRepository noShowOrderItemRepository;
 	private final ConsumerProfileRepository consumerProfileRepository;
 	private final FcmNotificationService fcmNotificationService;
 	private final NotificationEnqueueService notificationEnqueueService;
@@ -110,19 +112,23 @@ public class NoShowOrderConsumerService {
 			lines.add(new Line(post, menu, qty, unitPrice));
 		}
 
-		if (totalExpected != request.totalAmount()) {
+		int totalRounded = roundToTen(totalExpected);
+		int originalRounded = roundToTen(originalExpected);
+		int discountRounded = originalRounded - totalRounded;
+
+		if (totalRounded != request.totalAmount()) {
 			throw new BusinessException(ErrorCode.BAD_REQUEST, "결제 금액이 일치하지 않습니다.");
 		}
-		if (originalExpected - totalExpected != request.appliedDiscountAmount()) {
+		if (discountRounded != request.appliedDiscountAmount()) {
 			throw new BusinessException(ErrorCode.BAD_REQUEST, "할인 금액이 일치하지 않습니다.");
 		}
 
-		NoShowOrder order = NoShowOrder.create(consumerId, storeId, originalExpected, visitTime, null);
+		NoShowOrder order = NoShowOrder.create(consumerId, storeId, originalRounded, visitTime, null);
 		order.setOrderNo(generateUniqueOrderNo());
 		order.setPaymentMethod(request.paymentMethod());
 		order.setPaymentStatus(NoShowPaymentStatus.PAID);
-		order.setTotalPrice(originalExpected);
-		order.setPaidAmount(totalExpected);
+		order.setTotalPrice(originalRounded);
+		order.setPaidAmount(totalRounded);
 		order.setPaymentTxId(UUID.randomUUID().toString());
 		order.setPaymentMemo("테스트 결제 완료");
 		order.setMenuNames(buildMenuSummary(lines));
@@ -142,6 +148,9 @@ public class NoShowOrderConsumerService {
 		}
 
 		NoShowOrder saved = noShowOrderRepository.save(order);
+		if (!order.getItems().isEmpty()) {
+			noShowOrderItemRepository.saveAll(order.getItems());
+		}
 		ConsumerProfile consumerProfile = consumerProfileRepository.findById(consumerId).orElse(null);
 		notifyOwner(store, saved, consumerProfile);
 
@@ -240,6 +249,17 @@ public class NoShowOrderConsumerService {
 			builder.append(ORDER_NO_CHARS[ORDER_NO_RANDOM.nextInt(ORDER_NO_CHARS.length)]);
 		}
 		return builder.toString();
+	}
+
+	private int roundToTen(int amount) {
+		int remainder = amount % 10;
+		if (remainder == 0) {
+			return amount;
+		}
+		if (remainder >= 5) {
+			return amount + (10 - remainder);
+		}
+		return amount - remainder;
 	}
 
 	private record Line(NoShowPost post, Menu menu, int quantity, int unitPrice) {}
