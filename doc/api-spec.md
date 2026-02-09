@@ -19,6 +19,24 @@
 - `GET /api/v1/owner/no-show-posts?page&size&date`
 - `GET /api/v1/owner/no-show-posts/{postId}`
 
+## 노쇼 프리셋/예약 등록 (사장님, 스펙 고정)
+- `GET /api/v1/owner/no-show-presets/default`
+- `PUT /api/v1/owner/no-show-presets/default`
+- `POST /api/v1/owner/no-show-post-schedules`
+- `GET /api/v1/owner/no-show-post-schedules?page&size&status`
+- `GET /api/v1/owner/no-show-post-schedules/{scheduleId}`
+- `POST /api/v1/owner/no-show-post-schedules/{scheduleId}/publish-now`
+- `DELETE /api/v1/owner/no-show-post-schedules/{scheduleId}`
+
+### 프리셋/예약 정책 (고정)
+- 기존 즉시등록 API(`POST /api/v1/owner/no-show-posts/batch`)는 유지한다.
+- 프리셋은 현재 매장당 기본 1개(`discountPercent`, `visitAvailableMinutes`, `saleDelayMinutes`)를 사용한다. 향후 복수 프리셋으로 확장 가능해야 한다.
+- 예약 등록은 서버가 `requestedAt` 기준으로 `startAt = requestedAt + saleDelayMinutes`를 계산한다.
+- 예약 등록은 서버가 `expireAt = startAt + visitAvailableMinutes`를 계산한다.
+- 예약 상태가 `QUEUED`일 때만 취소 가능하다.
+- `publish-now` 호출 시 예약 대기(`QUEUED`)를 즉시 등록으로 전환한다.
+- 예약이 실제 게시되면 기존 노쇼 글 등록 로직(중복 병합/이력 저장/즐겨찾기 알림)과 동일하게 처리한다.
+
 ## 노쇼 주문 (사장님)
 - `GET /api/v1/owner/orders?page&size&date&status?`
 - `GET /api/v1/owner/orders/{orderId}` *(orderId=UUID)*
