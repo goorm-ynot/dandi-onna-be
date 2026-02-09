@@ -44,12 +44,12 @@ public class NoShowOrderService {
 	private final ConsumerProfileRepository consumerProfileRepository;
 
 	@Transactional(readOnly = true)
-	public NoShowOrderListResponse listOrders(UUID ownerId, int page, int size, LocalDate date) {
+	public NoShowOrderListResponse listOrders(UUID ownerId, int page, int size, LocalDate date, NoShowOrderStatus status) {
 		Store store = storeRepository.findByOwnerUserId(ownerId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "매장을 찾을 수 없습니다."));
 
 		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-		Page<NoShowOrder> ordersPage = queryOrders(store.getId(), date, pageable);
+		Page<NoShowOrder> ordersPage = queryOrders(store.getId(), date, status, pageable);
 
 		List<NoShowOrder> orders = ordersPage.getContent();
 		Map<UUID, String> phoneMap = loadConsumerPhones(
@@ -154,11 +154,17 @@ public class NoShowOrderService {
 			.toList();
 	}
 
-	private Page<NoShowOrder> queryOrders(UUID storeId, LocalDate date, Pageable pageable) {
-		if (date != null) {
+	private Page<NoShowOrder> queryOrders(UUID storeId, LocalDate date, NoShowOrderStatus status, Pageable pageable) {
+		if (date != null && status != null) {
+			OffsetDateTime start = date.atStartOfDay(ZONE_KST).toOffsetDateTime();
+			OffsetDateTime end = date.plusDays(1).atStartOfDay(ZONE_KST).toOffsetDateTime();
+			return noShowOrderRepository.findByStoreIdAndStatusAndVisitTimeBetween(storeId, status, start, end, pageable);
+		} else if (date != null) {
 			OffsetDateTime start = date.atStartOfDay(ZONE_KST).toOffsetDateTime();
 			OffsetDateTime end = date.plusDays(1).atStartOfDay(ZONE_KST).toOffsetDateTime();
 			return noShowOrderRepository.findByStoreIdAndVisitTimeBetween(storeId, start, end, pageable);
+		} else if (status != null) {
+			return noShowOrderRepository.findByStoreIdAndStatus(storeId, status, pageable);
 		}
 		return noShowOrderRepository.findByStoreId(storeId, pageable);
 	}
