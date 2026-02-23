@@ -19,6 +19,9 @@ public class NotificationTarget {
 	@Id
 	private Long id;
 
+	@Column(name = "notification_id", nullable = false)
+	private UUID notificationId;
+
 	@Column(name = "user_id", nullable = false)
 	private UUID userId;
 
@@ -42,6 +45,9 @@ public class NotificationTarget {
 
 	@Column(name = "message_id")
 	private String messageId;
+
+	@Column(name = "created_at")
+	private OffsetDateTime createdAt;
 
 	@Column(name = "updated_at")
 	private OffsetDateTime updatedAt;

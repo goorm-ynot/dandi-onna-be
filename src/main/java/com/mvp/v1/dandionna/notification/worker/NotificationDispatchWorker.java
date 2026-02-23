@@ -20,17 +20,20 @@ import com.mvp.v1.dandionna.notification.entity.NotificationTarget;
 import com.mvp.v1.dandionna.notification.repository.NotificationTargetRepository;
 
 /**
- * Redis Stream 기반 알림 전송 워커 스켈레톤.
+ * Redis Stream 기반 알림 전송 워커.
  * - Stream key: notification:queue
- * - Consumer group/offset 관리, FCM 전송/DB 상태 업데이트는 추후 확장
+ * - 최대 3회 재시도 후 DLQ(notification:dlq)로 이동
+ * - Consumer group 기반 처리, FCM 전송 및 DB 상태 업데이트
  */
 @Component
 public class NotificationDispatchWorker {
 
 	private static final Logger log = LoggerFactory.getLogger(NotificationDispatchWorker.class);
 	private static final String STREAM_KEY = "notification:queue";
+	private static final String DLQ_STREAM_KEY = "notification:dlq";
 	private static final String GROUP = "notification-workers";
 	private static final String CONSUMER = "worker-1";
+	private static final int MAX_ATTEMPTS = 3;
 
 	private final StringRedisTemplate redisTemplate;
 	private final FcmNotificationService fcmNotificationService;
@@ -93,20 +96,26 @@ public class NotificationDispatchWorker {
 					continue;
 				}
 				int nextAttempt = attemptFromDb + 1;
-				int backoffSec = backoffSeconds(nextAttempt);
-				String status = nextAttempt > 3 ? "FAILED" : "QUEUED";
-				OffsetDateTime nextRetryAt = status.equals("FAILED") ? null : OffsetDateTime.now().plusSeconds(backoffSec);
-				if (target != null) {
-					notificationTargetRepository.markFailure(
-						payload.targetId(),
-						status,
-						nextAttempt,
-						"FCM_FAILED",
-						"FCM send failed",
-						nextRetryAt
-					);
-				}
-				if ("QUEUED".equals(status)) {
+				if (nextAttempt > MAX_ATTEMPTS) {
+					// 최대 재시도 초과 → DLQ로 이동
+					moveToDlq(payload, nextAttempt, "FCM_FAILED", "FCM send failed after " + MAX_ATTEMPTS + " attempts");
+					if (target != null) {
+						notificationTargetRepository.markFailure(
+							payload.targetId(), "FAILED", nextAttempt,
+							"FCM_FAILED", "FCM send failed after " + MAX_ATTEMPTS + " attempts", null
+						);
+					}
+					log.warn("알림 DLQ 이동: targetId={}, userId={}, attempt={}", payload.targetId(), payload.userId(), nextAttempt);
+				} else {
+					// 재시도 예약
+					int backoffSec = backoffSeconds(nextAttempt);
+					OffsetDateTime nextRetryAt = OffsetDateTime.now().plusSeconds(backoffSec);
+					if (target != null) {
+						notificationTargetRepository.markFailure(
+							payload.targetId(), "QUEUED", nextAttempt,
+							"FCM_FAILED", "FCM send failed", nextRetryAt
+						);
+					}
 					requeue(payload, nextAttempt, nextRetryAt);
 				}
 			} catch (Exception e) {
@@ -123,6 +132,65 @@ public class NotificationDispatchWorker {
 			case 2 -> 10;
 			default -> 15;
 		};
+	}
+
+	/**
+	 * DLQ 메시지를 메인 큐로 재투입한다 (attempt 초기화).
+	 * @return 재투입된 메시지 수
+	 */
+	public int replayDlq(int maxCount) {
+		List<MapRecord<String, Object, Object>> records = redisTemplate.opsForStream().read(
+			StreamOffset.create(DLQ_STREAM_KEY, ReadOffset.from("0-0"))
+		);
+		if (records == null || records.isEmpty()) {
+			return 0;
+		}
+		int replayed = 0;
+		for (MapRecord<String, Object, Object> record : records) {
+			if (replayed >= maxCount) {
+				break;
+			}
+			DispatchPayload payload = DispatchPayload.from(record.getValue());
+			if (payload != null) {
+				requeue(payload, 0, null);
+				if (payload.targetId() != null) {
+					notificationTargetRepository.markFailure(
+						payload.targetId(), "QUEUED", 0,
+						null, "DLQ 재투입", OffsetDateTime.now()
+					);
+				}
+			}
+			redisTemplate.opsForStream().delete(DLQ_STREAM_KEY, record.getId());
+			replayed++;
+		}
+		log.info("DLQ 재처리 완료: {}건", replayed);
+		return replayed;
+	}
+
+	/**
+	 * DLQ 메시지 수를 반환한다.
+	 */
+	public long getDlqSize() {
+		Long size = redisTemplate.opsForStream().size(DLQ_STREAM_KEY);
+		return size != null ? size : 0;
+	}
+
+	private void moveToDlq(DispatchPayload payload, int attempt, String errorCode, String errorMessage) {
+		Map<String, String> map = new java.util.HashMap<>();
+		if (payload.targetId() != null) {
+			map.put("targetId", payload.targetId().toString());
+		}
+		map.put("userId", payload.userId().toString());
+		map.put("title", payload.title());
+		map.put("body", payload.body());
+		map.put("attempt", String.valueOf(attempt));
+		map.put("errorCode", errorCode);
+		map.put("errorMessage", errorMessage);
+		map.put("failedAt", OffsetDateTime.now().toString());
+		if (payload.data() != null) {
+			payload.data().forEach((k, v) -> map.put("data." + k, v));
+		}
+		redisTemplate.opsForStream().add(DLQ_STREAM_KEY, map);
 	}
 
 	private void requeue(DispatchPayload payload, int attempt, OffsetDateTime nextRetryAt) {
