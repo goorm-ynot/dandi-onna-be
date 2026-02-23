@@ -3,6 +3,7 @@ package com.mvp.v1.dandionna.config.Security;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -25,13 +26,15 @@ import com.mvp.v1.dandionna.auth.service.TokenBlacklistService;
  */
 @Configuration
 @EnableMethodSecurity
-@EnableConfigurationProperties(CorsProperties.class)
+@EnableConfigurationProperties({CorsProperties.class, RateLimitProperties.class})
 public class SecurityConfig {
 
 	private final CorsProperties corsProperties;
+	private final RateLimitProperties rateLimitProperties;
 
-	public SecurityConfig(CorsProperties corsProperties) {
+	public SecurityConfig(CorsProperties corsProperties, RateLimitProperties rateLimitProperties) {
 		this.corsProperties = corsProperties;
+		this.rateLimitProperties = rateLimitProperties;
 	}
 
 	/**
@@ -46,7 +49,7 @@ public class SecurityConfig {
 	 */
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http, JweTokenService tokens,
-		TokenBlacklistService blacklistService) throws Exception {
+		TokenBlacklistService blacklistService, StringRedisTemplate redisTemplate) throws Exception {
 		http
 			.cors(Customizer.withDefaults())
 			.csrf(csrf -> csrf.disable())
@@ -85,6 +88,7 @@ public class SecurityConfig {
 				.anyRequest().authenticated()
 			)
 			.addFilterBefore(new JweAuthFilter(tokens, blacklistService), UsernamePasswordAuthenticationFilter.class)
+			.addFilterAfter(new RateLimitFilter(redisTemplate, rateLimitProperties), JweAuthFilter.class)
 			.httpBasic(httpBasic -> httpBasic.disable());
 
 		return http.build();
