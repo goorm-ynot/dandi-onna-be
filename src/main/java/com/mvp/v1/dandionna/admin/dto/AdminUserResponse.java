@@ -1,6 +1,6 @@
 package com.mvp.v1.dandionna.admin.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import com.mvp.v1.dandionna.auth.entity.User;
@@ -10,7 +10,7 @@ public record AdminUserResponse(
 	UUID id,
 	String loginId,
 	UserRole role,
-	LocalDateTime createdAt
+	OffsetDateTime createdAt
 ) {
 	public static AdminUserResponse from(User user) {
 		return new AdminUserResponse(
