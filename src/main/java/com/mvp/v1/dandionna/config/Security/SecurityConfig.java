@@ -47,6 +47,7 @@ public class SecurityConfig {
 	 *     <li>보안 헤더(X-Content-Type-Options, X-Frame-Options, HSTS 등)를 설정한다.</li>
 	 * </ol>
 	 */
+	@SuppressWarnings("removal")
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http, JweTokenService tokens,
 		TokenBlacklistService blacklistService, StringRedisTemplate redisTemplate) throws Exception {
@@ -62,7 +63,7 @@ public class SecurityConfig {
 					.maxAgeInSeconds(31536000))
 				.referrerPolicy(referrer -> referrer
 					.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-				.permissionPolicy(permissions -> permissions
+				.permissionsPolicy(permissions -> permissions
 					.policy("camera=(), microphone=(), geolocation=(self)"))
 			)
 			.authorizeHttpRequests(auth -> auth
