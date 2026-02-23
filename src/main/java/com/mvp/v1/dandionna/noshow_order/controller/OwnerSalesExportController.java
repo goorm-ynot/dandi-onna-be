@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import com.mvp.v1.dandionna.common.dto.ApiResponse;
 import com.mvp.v1.dandionna.common.service.SecurityUtils;
 import com.mvp.v1.dandionna.export_job.dto.ExportJobCreateRequest;
@@ -36,7 +38,7 @@ public class OwnerSalesExportController {
 	@SecurityRequirement(name = "bearerAuth")
 	@PostMapping
 	public ResponseEntity<ApiResponse<ExportJobCreateResponse>> create(
-		@RequestBody ExportJobCreateRequest request
+		@Valid @RequestBody ExportJobCreateRequest request
 	) {
 		UUID ownerId = SecurityUtils.getCurrentUserId();
 		ExportJobCreateResponse response = exportJobService.requestOwnerSalesExport(ownerId, request);
