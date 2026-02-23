@@ -67,7 +67,7 @@ public class SecurityConfig {
 			)
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/api/v1/auth/**").permitAll()
-				.requestMatchers("/actuator/health",
+				.requestMatchers("/actuator/health", "/actuator/prometheus",
 					"/swagger-ui.html", "/swagger-ui/**",
 					"/v3/api-docs/**", "/api-docs/**").permitAll()
 				.requestMatchers(HttpMethod.GET,

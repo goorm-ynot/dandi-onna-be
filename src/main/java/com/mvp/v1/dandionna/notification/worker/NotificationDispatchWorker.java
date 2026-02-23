@@ -19,6 +19,8 @@ import com.mvp.v1.dandionna.fcm.service.FcmNotificationService;
 import com.mvp.v1.dandionna.notification.entity.NotificationTarget;
 import com.mvp.v1.dandionna.notification.repository.NotificationTargetRepository;
 
+import io.micrometer.core.instrument.Counter;
+
 /**
  * Redis Stream 기반 알림 전송 워커.
  * - Stream key: notification:queue
@@ -38,13 +40,19 @@ public class NotificationDispatchWorker {
 	private final StringRedisTemplate redisTemplate;
 	private final FcmNotificationService fcmNotificationService;
 	private final NotificationTargetRepository notificationTargetRepository;
+	private final Counter notificationSentCounter;
+	private final Counter notificationFailedCounter;
 
 	public NotificationDispatchWorker(StringRedisTemplate redisTemplate,
 		FcmNotificationService fcmNotificationService,
-		NotificationTargetRepository notificationTargetRepository) {
+		NotificationTargetRepository notificationTargetRepository,
+		Counter notificationSentCounter,
+		Counter notificationFailedCounter) {
 		this.redisTemplate = redisTemplate;
 		this.fcmNotificationService = fcmNotificationService;
 		this.notificationTargetRepository = notificationTargetRepository;
+		this.notificationSentCounter = notificationSentCounter;
+		this.notificationFailedCounter = notificationFailedCounter;
 		ensureGroup();
 	}
 
@@ -93,6 +101,7 @@ public class NotificationDispatchWorker {
 					if (target != null) {
 						notificationTargetRepository.markSuccess(payload.targetId(), null);
 					}
+					notificationSentCounter.increment();
 					continue;
 				}
 				int nextAttempt = attemptFromDb + 1;
@@ -105,6 +114,7 @@ public class NotificationDispatchWorker {
 							"FCM_FAILED", "FCM send failed after " + MAX_ATTEMPTS + " attempts", null
 						);
 					}
+					notificationFailedCounter.increment();
 					log.warn("알림 DLQ 이동: targetId={}, userId={}, attempt={}", payload.targetId(), payload.userId(), nextAttempt);
 				} else {
 					// 재시도 예약

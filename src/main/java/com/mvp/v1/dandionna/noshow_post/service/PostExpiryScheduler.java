@@ -13,6 +13,7 @@ import com.mvp.v1.dandionna.noshow_post.entity.NoShowPost;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPostStatus;
 import com.mvp.v1.dandionna.noshow_post.repository.NoShowPostRepository;
 
+import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -26,6 +27,7 @@ public class PostExpiryScheduler {
 	private static final Logger log = LoggerFactory.getLogger(PostExpiryScheduler.class);
 
 	private final NoShowPostRepository noShowPostRepository;
+	private final Counter postExpiredCounter;
 
 	@Scheduled(fixedRate = 60_000) // 1분마다 실행
 	@Transactional
@@ -38,7 +40,7 @@ public class PostExpiryScheduler {
 		for (NoShowPost post : expired) {
 			post.markExpired();
 		}
-
+		postExpiredCounter.increment(expired.size());
 		log.info("만료 처리된 노쇼 게시글: {}건", expired.size());
 	}
 }
