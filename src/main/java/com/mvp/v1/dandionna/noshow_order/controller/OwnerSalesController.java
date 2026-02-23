@@ -17,11 +17,13 @@ import com.mvp.v1.dandionna.noshow_order.service.OwnerSalesService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/owner/sales")
 @Validated
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('OWNER')")
 public class OwnerSalesController {
 
 	private final OwnerSalesService ownerSalesService;
