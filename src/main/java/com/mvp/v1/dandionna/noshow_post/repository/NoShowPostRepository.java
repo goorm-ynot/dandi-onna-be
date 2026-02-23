@@ -41,4 +41,13 @@ public interface NoShowPostRepository extends JpaRepository<NoShowPost, Long> {
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select p from NoShowPost p where p.id in :ids and p.deletedAt is null")
 	List<NoShowPost> findAllByIdInForUpdate(@Param("ids") Collection<Long> ids);
+
+	/**
+	 * 만료 시간이 지났지만 아직 open 상태인 게시글을 조회한다 (스케줄러용).
+	 */
+	@Query("select p from NoShowPost p where p.status = :status and p.expireAt < :now and p.deletedAt is null")
+	List<NoShowPost> findExpiredPosts(
+		@Param("status") NoShowPostStatus status,
+		@Param("now") OffsetDateTime now
+	);
 }
