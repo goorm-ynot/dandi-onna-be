@@ -1,5 +1,8 @@
 package com.mvp.v1.dandionna.config.Security;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -23,14 +26,37 @@ import io.jsonwebtoken.security.AeadAlgorithm;
 @Configuration
 @EnableConfigurationProperties(JwtProps.class)
 public class SecurityBeans {
+
 	/**
-	 * JWE 암복호화에 공용으로 사용하는 대칭 AES 키를 생성한다.
-	 * 실제 키 문자열은 설정/환경 변수에 존재하며 이곳에서만 디코딩된다.
+	 * JWE 암복호화에 사용하는 현재 활성 대칭 AES 키.
+	 * 토큰 발급에 사용된다.
 	 */
 	@Bean
 	public SecretKey jweSecretKey(JwtProps props) {
 		byte[] key = Decoders.BASE64.decode(props.jwe().secretBase64());
-		return new SecretKeySpec(key, "AES"); // A256GCM에 맞는 256-bit 키
+		return new SecretKeySpec(key, "AES");
+	}
+
+	/**
+	 * 키 로테이션을 위한 키 맵.
+	 * kid -> SecretKey 매핑. 현재 키 + 이전 키(있을 경우)를 포함한다.
+	 * 토큰 검증 시 kid 헤더를 보고 적절한 키를 선택한다.
+	 */
+	@Bean
+	public Map<String, SecretKey> jweKeyMap(JwtProps props) {
+		Map<String, SecretKey> keyMap = new LinkedHashMap<>();
+
+		// 현재 활성 키
+		byte[] currentKeyBytes = Decoders.BASE64.decode(props.jwe().secretBase64());
+		keyMap.put(props.jwe().kid(), new SecretKeySpec(currentKeyBytes, "AES"));
+
+		// 이전 키 (로테이션 시 과도기 동안 이전 토큰도 검증 가능)
+		if (props.jwe().previousSecretBase64() != null && !props.jwe().previousSecretBase64().isBlank()) {
+			byte[] prevKeyBytes = Decoders.BASE64.decode(props.jwe().previousSecretBase64());
+			keyMap.put("prev-" + props.jwe().kid(), new SecretKeySpec(prevKeyBytes, "AES"));
+		}
+
+		return keyMap;
 	}
 
 	/**
@@ -38,7 +64,6 @@ public class SecurityBeans {
 	 */
 	@Bean
 	public AeadAlgorithm jweEncAlg(JwtProps props) {
-		// enc는 A128GCM/A192GCM/A256GCM 중 선택. 기본 A256GCM 권장
 		return switch (props.jwe().enc()) {
 			case "A128GCM" -> Jwts.ENC.A128GCM;
 			case "A192GCM" -> Jwts.ENC.A192GCM;
