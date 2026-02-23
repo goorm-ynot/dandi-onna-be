@@ -83,6 +83,8 @@ public class SecurityConfig {
 				// 사장님 전용
 				.requestMatchers("/api/v1/owner/**").hasRole("OWNER")
 				.requestMatchers("/api/v1/stores/**").hasRole("OWNER")
+				// 관리자 전용
+				.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 				// 공통 인증 필요
 				.requestMatchers("/api/v1/push/**").authenticated()
 				.anyRequest().authenticated()
