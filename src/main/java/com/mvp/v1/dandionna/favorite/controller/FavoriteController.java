@@ -20,11 +20,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/favorites")
 @Validated
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('CONSUMER')")
 public class FavoriteController {
 
 	private final FavoriteService favoriteService;

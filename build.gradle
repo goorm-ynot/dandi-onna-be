@@ -49,6 +49,13 @@ dependencies {
     // FCM
     implementation 'com.google.firebase:firebase-admin:9.5.0'
 
+    // Actuator + Prometheus
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // 구조화 로깅 (JSON) - 운영 환경
+    implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
+
     // 유틸
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
     implementation("org.apache.commons:commons-lang3:3.18.0")

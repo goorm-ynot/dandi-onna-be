@@ -26,11 +26,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/owner/menus")
 @Validated
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('OWNER')")
 public class MenuController {
 
 	private final MenuService menuService;

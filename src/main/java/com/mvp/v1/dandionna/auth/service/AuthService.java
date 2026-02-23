@@ -10,15 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mvp.v1.dandionna.auth.dto.LoginRequest;
 import com.mvp.v1.dandionna.auth.dto.LoginResponse;
-import com.mvp.v1.dandionna.auth.dto.LogoutRequest;
-import com.mvp.v1.dandionna.auth.dto.RefreshTokenRequest;
-import com.mvp.v1.dandionna.auth.dto.RefreshTokenResponse;
 import com.mvp.v1.dandionna.auth.dto.SignUpRequest;
 import com.mvp.v1.dandionna.auth.entity.User;
 import com.mvp.v1.dandionna.auth.repository.UserRepository;
 import com.mvp.v1.dandionna.common.dto.ErrorCode;
 import com.mvp.v1.dandionna.common.exeption.BusinessException;
-import com.mvp.v1.dandionna.config.Security.JwtProps;
 import com.mvp.v1.dandionna.config.Security.JweTokenService;
 
 import io.jsonwebtoken.Claims;
@@ -60,24 +56,26 @@ public class AuthService {
 		userRepository.save(User.create(request.loginId(), encoded, request.role()));
 	}
 
-
+	/**
+	 * Access + Refresh 토큰을 원자적으로 블랙리스트에 등록한다.
+	 * Lua 스크립트를 사용하여 두 토큰이 동시에 블랙리스트되거나, 둘 다 실패한다.
+	 */
 	@Transactional
-	public void logout(String accessToken, LogoutRequest request) {
-		Duration accessTtl = remainingTtl(accessToken);
-		if (!accessTtl.isZero() && !accessTtl.isNegative()) {
-			blacklistService.blacklistAccessToken(accessToken, accessTtl);
-		}
+	public void logout(String accessToken, String refreshToken) {
+		Duration accessTtl = safeRemainingTtl(accessToken);
+		Duration refreshTtl = safeRemainingTtl(refreshToken);
 
-		String refreshToken = request.refreshToken();
-		Duration refreshTtl = remainingTtl(refreshToken);
-		if (!refreshTtl.isZero() && !refreshTtl.isNegative()) {
+		if (accessTtl.isPositive() && refreshTtl.isPositive()) {
+			blacklistService.blacklistBoth(accessToken, accessTtl, refreshToken, refreshTtl);
+		} else if (accessTtl.isPositive()) {
+			blacklistService.blacklistAccessToken(accessToken, accessTtl);
+		} else if (refreshTtl.isPositive()) {
 			blacklistService.blacklistRefreshToken(refreshToken, refreshTtl);
 		}
 	}
 
 	@Transactional(readOnly = true)
-	public RefreshTokenResponse refresh(RefreshTokenRequest request) {
-		String refreshToken = request.refreshToken();
+	public String refresh(String refreshToken) {
 		if (blacklistService.isRefreshTokenBlacklisted(refreshToken)) {
 			throw new BusinessException(ErrorCode.AUTH_INVALID_TOKEN, "블랙리스트 처리된 리프레시 토큰입니다.");
 		}
@@ -87,17 +85,17 @@ public class AuthService {
 		User user = userRepository.findById(UUID.fromString(userId))
 			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
-		String newAccess = tokenService.issueAccessToken(user.getId().toString(), user.getRole().name());
-		return RefreshTokenResponse.of(newAccess);
+		return tokenService.issueAccessToken(user.getId().toString(), user.getRole().name());
 	}
 
-	private Duration remainingTtl(String token) {
+	private Duration safeRemainingTtl(String token) {
 		try {
 			Claims claims = tokenService.parseClaims(token);
 			Instant exp = claims.getExpiration().toInstant();
-			return Duration.between(Instant.now(), exp);
+			Duration remaining = Duration.between(Instant.now(), exp);
+			return remaining.isNegative() ? Duration.ZERO : remaining;
 		} catch (JwtException ex) {
-			throw new BusinessException(ErrorCode.AUTH_INVALID_TOKEN, "토큰이 유효하지 않습니다.");
+			return Duration.ZERO;
 		}
 	}
 

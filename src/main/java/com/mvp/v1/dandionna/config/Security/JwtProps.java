@@ -18,6 +18,13 @@ public record JwtProps(Jwt jwt, Jwe jwe) {
 
 	/**
 	 * JWE 암호화에 필요한 알고리즘/대칭키 설정.
+	 * - secretBase64: 현재 활성 키 (토큰 발급에 사용)
+	 * - previousSecretBase64: 이전 키 (토큰 검증에만 사용, 키 로테이션 시)
+	 * - kid: 현재 키 식별자 (토큰 헤더에 포함)
 	 */
-	public record Jwe(String enc, String secretBase64) {}
+	public record Jwe(String enc, String secretBase64, String previousSecretBase64, String kid) {
+		public Jwe {
+			if (kid == null || kid.isBlank()) kid = "default";
+		}
+	}
 }
