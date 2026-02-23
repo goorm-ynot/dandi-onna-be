@@ -22,11 +22,13 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/home")
 @Validated
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('CONSUMER')")
 public class HomeController {
 
 	private final HomeService homeService;

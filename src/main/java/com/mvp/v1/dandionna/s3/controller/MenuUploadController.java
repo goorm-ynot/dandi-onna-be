@@ -29,11 +29,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/menus/{menuId}/uploads")
 @Validated
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('OWNER')")
 public class MenuUploadController {
 
 	private final UploadService uploadService;

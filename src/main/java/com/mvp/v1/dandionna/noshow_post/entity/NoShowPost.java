@@ -129,6 +129,10 @@ public class NoShowPost extends BaseEntity {
 		this.status = NoShowPostStatus.open;
 	}
 
+	public void markExpired() {
+		this.status = NoShowPostStatus.expired;
+	}
+
 	public void consumeQuantity(int amount) {
 		if (amount <= 0) {
 			throw new IllegalArgumentException("차감 수량은 0보다 커야 합니다.");

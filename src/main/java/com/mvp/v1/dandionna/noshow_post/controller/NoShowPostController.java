@@ -25,6 +25,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * @author rua
@@ -34,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("api/v1/owner/no-show-posts")
 @Validated
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('OWNER')")
 public class NoShowPostController {
 
 	private final NoShowPostService noShowPostService;

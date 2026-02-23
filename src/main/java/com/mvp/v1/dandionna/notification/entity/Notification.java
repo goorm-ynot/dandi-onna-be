@@ -29,6 +29,9 @@ public class Notification {
 	@JdbcTypeCode(SqlTypes.JSON)
 	private Object data;
 
+	private String category;
+	private String priority;
+
 	@Column(name = "created_at")
 	private OffsetDateTime createdAt;
 }

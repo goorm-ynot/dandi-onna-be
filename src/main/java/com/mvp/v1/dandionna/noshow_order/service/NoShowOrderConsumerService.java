@@ -40,6 +40,7 @@ import com.mvp.v1.dandionna.notification.service.NotificationEnqueueService;
 import com.mvp.v1.dandionna.store.entity.Store;
 import com.mvp.v1.dandionna.store.repository.StoreRepository;
 
+import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -61,6 +62,7 @@ public class NoShowOrderConsumerService {
 	private final ConsumerProfileRepository consumerProfileRepository;
 	private final FcmNotificationService fcmNotificationService;
 	private final NotificationEnqueueService notificationEnqueueService;
+	private final Counter orderCreatedCounter;
 
 	@Transactional
 	public NoShowOrderCreateResponse createOrder(UUID consumerId, NoShowOrderCreateRequest request) {
@@ -153,6 +155,7 @@ public class NoShowOrderConsumerService {
 		}
 		ConsumerProfile consumerProfile = consumerProfileRepository.findById(consumerId).orElse(null);
 		notifyOwner(store, saved, consumerProfile);
+		orderCreatedCounter.increment();
 
 		return new NoShowOrderCreateResponse(
 			saved.getId(),

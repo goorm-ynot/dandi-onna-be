@@ -25,11 +25,13 @@ import com.mvp.v1.dandionna.noshow_order.service.NoShowOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/owner/orders")
 @Validated
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('OWNER')")
 public class NoShowOrderController {
 
 	private final NoShowOrderService noShowOrderService;
