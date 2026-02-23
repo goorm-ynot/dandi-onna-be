@@ -46,6 +46,7 @@ public class SecurityConfig {
 				.requestMatchers(HttpMethod.GET,
 					"/public/**",
 					"/store-admin.html",
+					"/no-show-schedule-case-study.html",
 					"/static/**",
 					"/favicon.ico").permitAll()
 				// 소비자 전용
