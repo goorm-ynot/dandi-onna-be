@@ -58,46 +58,21 @@ public class NoShowPostService {
 		Store store = storeRepository.findByOwnerUserId(userId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "매장을 찾을 수 없습니다."));
 
-		validateRequest(request);
+		validateImmediateRequest(request);
 
 		OffsetDateTime startAtUtc = OffsetDateTime.now(NoShowConstants.DB_ZONE).withSecond(0).withNano(0);
 		OffsetDateTime expireAtUtc = normalizeExpireAt(startAtUtc, store.getCloseTime(), request.expireAt());
+		publishListings(store, request.discountPercent(), startAtUtc, expireAtUtc, request.items());
+	}
 
-		Map<UUID, Menu> menuMap = loadMenus(store.getId(), request.items());
-
-		for (NoShowBatchCreateRequest.Item item : request.items()) {
-			Menu menu = menuMap.get(item.menuId());
-			int qty = toQuantity(item.quantity());
-			int originalUnitPrice = menu.getPriceKrw();
-			int discountedUnitPrice = applyDiscount(originalUnitPrice, request.discountPercent());
-
-			noShowPostRepository.findForUpdate(store.getId(), item.menuId(), expireAtUtc)
-				.ifPresentOrElse(existing -> {
-					noShowPostHistoryRepository.save(NoShowPostHistory.from(existing, startAtUtc, HISTORY_REASON_REPLACED));
-					int combinedQty = combineQuantities(existing.getQtyRemaining(), qty);
-					existing.overrideListing(
-						request.discountPercent(),
-						discountedUnitPrice,
-						originalUnitPrice,
-						combinedQty,
-						startAtUtc,
-						expireAtUtc
-					);
-				}, () -> {
-					NoShowPost post = NoShowPost.create(
-						store.getId(),
-						item.menuId(),
-						request.discountPercent(),
-						discountedUnitPrice,
-						originalUnitPrice,
-						qty,
-						startAtUtc,
-						expireAtUtc
-					);
-					noShowPostRepository.save(post);
-					favoriteNotificationService.notifyNoShowPost(store, menu, post);
-				});
-		}
+	@Transactional
+	int publishScheduledBatch(Store store, int discountPercent, OffsetDateTime startAtUtc, OffsetDateTime expireAtUtc,
+		List<NoShowBatchCreateRequest.Item> items) {
+		validateDiscount(discountPercent);
+		validateItems(items);
+		validateScheduleWindow(store.getCloseTime(), startAtUtc, expireAtUtc);
+		publishListings(store, discountPercent, startAtUtc, expireAtUtc, items);
+		return items.size();
 	}
 
 	@Transactional(readOnly = true)
@@ -141,18 +116,68 @@ public class NoShowPostService {
 		return new NoShowPostsResponse(items, pageInfo);
 	}
 
-	private void validateRequest(NoShowBatchCreateRequest request) {
-		if (request.discountPercent() < NoShowConstants.MIN_DISCOUNT_PERCENT
-			|| request.discountPercent() > NoShowConstants.MAX_DISCOUNT_PERCENT) {
-			throw new BusinessException(ErrorCode.LISTING_DISCOUNT_INVALID, "할인율은 30~90% 사이여야 합니다.");
-		}
+	private void validateImmediateRequest(NoShowBatchCreateRequest request) {
+		validateDiscount(request.discountPercent());
 		if (request.expireAt() == null) {
 			throw new BusinessException(ErrorCode.BAD_REQUEST, "마감 시간을 입력해 주세요.");
 		}
-		for (NoShowBatchCreateRequest.Item item : request.items()) {
+		validateItems(request.items());
+	}
+
+	private void validateDiscount(int discountPercent) {
+		if (discountPercent < NoShowConstants.MIN_DISCOUNT_PERCENT
+			|| discountPercent > NoShowConstants.MAX_DISCOUNT_PERCENT) {
+			throw new BusinessException(ErrorCode.LISTING_DISCOUNT_INVALID, "할인율은 30~90% 사이여야 합니다.");
+		}
+	}
+
+	private void validateItems(List<NoShowBatchCreateRequest.Item> items) {
+		if (items == null || items.isEmpty()) {
+			throw new BusinessException(ErrorCode.BAD_REQUEST, "등록할 메뉴를 입력해 주세요.");
+		}
+		for (NoShowBatchCreateRequest.Item item : items) {
 			if (item.quantity() < NoShowConstants.MIN_QUANTITY) {
 				throw new BusinessException(ErrorCode.LISTING_QTY_INVALID, "수량은 1 이상이어야 합니다.");
 			}
+		}
+	}
+
+	private void publishListings(Store store, int discountPercent, OffsetDateTime startAtUtc, OffsetDateTime expireAtUtc,
+		List<NoShowBatchCreateRequest.Item> items) {
+		Map<UUID, Menu> menuMap = loadMenus(store.getId(), items);
+
+		for (NoShowBatchCreateRequest.Item item : items) {
+			Menu menu = menuMap.get(item.menuId());
+			int qty = toQuantity(item.quantity());
+			int originalUnitPrice = menu.getPriceKrw();
+			int discountedUnitPrice = applyDiscount(originalUnitPrice, discountPercent);
+
+			noShowPostRepository.findForUpdate(store.getId(), item.menuId(), expireAtUtc)
+				.ifPresentOrElse(existing -> {
+					noShowPostHistoryRepository.save(NoShowPostHistory.from(existing, startAtUtc, HISTORY_REASON_REPLACED));
+					int combinedQty = combineQuantities(existing.getQtyRemaining(), qty);
+					existing.overrideListing(
+						discountPercent,
+						discountedUnitPrice,
+						originalUnitPrice,
+						combinedQty,
+						startAtUtc,
+						expireAtUtc
+					);
+				}, () -> {
+					NoShowPost post = NoShowPost.create(
+						store.getId(),
+						item.menuId(),
+						discountPercent,
+						discountedUnitPrice,
+						originalUnitPrice,
+						qty,
+						startAtUtc,
+						expireAtUtc
+					);
+					noShowPostRepository.save(post);
+					favoriteNotificationService.notifyNoShowPost(store, menu, post);
+				});
 		}
 	}
 
@@ -257,6 +282,31 @@ public class NoShowPostService {
 		}
 
 		return candidate.withZoneSameInstant(NoShowConstants.DB_ZONE).toOffsetDateTime();
+	}
+
+	private void validateScheduleWindow(LocalTime closeTime, OffsetDateTime startAtUtc, OffsetDateTime expireAtUtc) {
+		if (startAtUtc == null || expireAtUtc == null || !expireAtUtc.isAfter(startAtUtc)) {
+			throw new BusinessException(ErrorCode.BAD_REQUEST, "예약 시간 범위가 올바르지 않습니다.");
+		}
+
+		long diffMinutes = Duration.between(startAtUtc, expireAtUtc).toMinutes();
+		if (diffMinutes < NoShowConstants.MIN_EXPIRE_MINUTES || diffMinutes > NoShowConstants.MAX_EXPIRE_MINUTES) {
+			throw new BusinessException(ErrorCode.LISTING_TTL_INVALID, "마감 시간은 현재로부터 0~300분 사이여야 합니다.");
+		}
+
+		ZonedDateTime startSeoul = startAtUtc.atZoneSameInstant(NoShowConstants.ZONE_KST).withSecond(0).withNano(0);
+		ZonedDateTime expireSeoul = expireAtUtc.atZoneSameInstant(NoShowConstants.ZONE_KST).withSecond(0).withNano(0);
+		ZonedDateTime closeSeoul = startSeoul.withHour(closeTime.getHour())
+			.withMinute(closeTime.getMinute())
+			.withSecond(0)
+			.withNano(0);
+
+		if (!closeSeoul.isAfter(startSeoul)) {
+			throw new BusinessException(ErrorCode.BAD_REQUEST, "영업시간이 이미 종료되었습니다.");
+		}
+		if (expireSeoul.isAfter(closeSeoul)) {
+			throw new BusinessException(ErrorCode.BAD_REQUEST, "영업시간을 넘어설 수 없습니다.");
+		}
 	}
 
 	private int combineQuantities(int existingRemaining, int additional) {
