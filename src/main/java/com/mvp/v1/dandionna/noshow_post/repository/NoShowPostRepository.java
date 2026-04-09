@@ -38,6 +38,8 @@ public interface NoShowPostRepository extends JpaRepository<NoShowPost, Long> {
 		Pageable pageable
 	);
 
+	List<NoShowPost> findByMenuIdInAndStatusAndDeletedAtIsNull(Collection<UUID> menuIds, NoShowPostStatus status);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select p from NoShowPost p where p.id in :ids and p.deletedAt is null")
 	List<NoShowPost> findAllByIdInForUpdate(@Param("ids") Collection<Long> ids);

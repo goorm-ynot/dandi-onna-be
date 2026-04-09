@@ -6,7 +6,8 @@
 - **users**: id(UUID), login_id, password_hash, role(CONSUMER/OWNER/ADMIN)
 - **owner_profiles / consumer_profiles**: 사용자 상세(이름, 전화번호 등)
 - **stores**: 매장 정보(+ PostGIS `geom` generated, 영업시간, 이미지 메타)
-- **menus**: 매장 메뉴(가격, 설명, 이미지 메타)
+- **menus**: 매장 메뉴(가격, 설명, 이미지 메타, `status`, `type`)
+- **menu_set_items**: 세트 메뉴와 단품 메뉴 구성 관계(`set_menu_id`, `component_menu_id`, `quantity`)
 - **no_show_posts**: 노쇼 판매글(할인율, qty_remaining, expire_at, status)
 - **no_show_post_history**: 변경 이력 저장
 - **no_show_presets**: 매장 기본/사용자 정의 노쇼 프리셋(할인율, 지연 분)
@@ -34,6 +35,8 @@ erDiagram
 
   stores ||--|| owner_profiles : owned_by
   stores ||--o{ menus : has
+  menus ||--o{ menu_set_items : set_menu
+  menus ||--o{ menu_set_items : component_menu
   stores ||--o{ no_show_posts : has
   stores ||--o{ no_show_presets : has
   stores ||--o{ no_show_post_schedules : queues
@@ -54,6 +57,10 @@ erDiagram
 - **no_show_orders.order_no**: 표시용 주문번호 (예: `NS-YYYYMMDD-XXXXXX`)
 - **no_show_orders.menu_names**: 주문 요약 텍스트
 - **no_show_orders.payment_status**: PENDING/PAID/FAILED/REFUNDED
+- **menus.status**: `menu_status` enum (`on_sale`, `sold_out`)
+- **menus.type**: `menu_type` enum (`single`, `set`)
+- **menu_set_items.quantity**: 1 이상, `UNIQUE(set_menu_id, component_menu_id)`
+- **menu_set_items.component_menu_id**: 단품 메뉴만 참조, 삭제는 `RESTRICT`
 - **no_show_presets.discount_percent**: 30~90
 - **no_show_presets.visit_available_minutes**: 1~300
 - **no_show_presets.sale_delay_minutes**: 0~300
@@ -65,3 +72,9 @@ erDiagram
 - **stores.geom**: `lat/lon` 기반 GENERATED column (PostGIS)
 - **export_jobs.request_hash**: 동일 요청 제어용 SHA-256
 - **export_jobs.file_key**: 엑셀 파일 객체 스토리지 경로
+
+## 메뉴 모델 메모
+- 새 메뉴는 기본적으로 `type=single`, `status=sold_out` 으로 생성됩니다.
+- 기존 메뉴 마이그레이션 시 `type=single`, `status=on_sale` 로 백필합니다.
+- 세트 메뉴의 실제 판매 가능 여부는 저장 상태가 아니라 구성 단품 상태를 포함한 계산 결과 `effectiveStatus` 로 판단합니다.
+- 세트 메뉴는 같은 매장의 단품 메뉴만 포함할 수 있고, 최소 1개 이상이어야 하며 자기 자신을 참조할 수 없습니다.

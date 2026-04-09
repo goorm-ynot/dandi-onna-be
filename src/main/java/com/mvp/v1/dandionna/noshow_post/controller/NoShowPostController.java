@@ -32,7 +32,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
  */
 
 @RestController
-@RequestMapping("api/v1/owner/no-show-posts")
+@RequestMapping("/api/v1/owner/no-show-posts")
 @Validated
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('OWNER')")

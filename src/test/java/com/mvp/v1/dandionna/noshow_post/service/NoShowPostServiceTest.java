@@ -1,6 +1,7 @@
 package com.mvp.v1.dandionna.noshow_post.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -28,9 +29,14 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
+import com.mvp.v1.dandionna.common.dto.ErrorCode;
+import com.mvp.v1.dandionna.common.exeption.BusinessException;
 import com.mvp.v1.dandionna.favorite.service.FavoriteNotificationService;
 import com.mvp.v1.dandionna.menu.entity.Menu;
+import com.mvp.v1.dandionna.menu.entity.MenuStatus;
+import com.mvp.v1.dandionna.menu.entity.MenuType;
 import com.mvp.v1.dandionna.menu.repository.MenuRepository;
+import com.mvp.v1.dandionna.menu.service.MenuService;
 import com.mvp.v1.dandionna.noshow_post.dto.NoShowBatchCreateRequest;
 import com.mvp.v1.dandionna.noshow_post.dto.NoShowPostsResponse;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPost;
@@ -53,6 +59,8 @@ class NoShowPostServiceTest {
 	@Mock
 	private MenuRepository menuRepository;
 	@Mock
+	private MenuService menuService;
+	@Mock
 	private NoShowPostRepository noShowPostRepository;
 	@Mock
 	private NoShowPostHistoryRepository historyRepository;
@@ -71,7 +79,7 @@ class NoShowPostServiceTest {
 		Menu menu = createMenu(menuId, storeId, "모둠회", 20000);
 
 		when(storeRepository.findByOwnerUserId(userId)).thenReturn(Optional.of(store));
-		when(menuRepository.findByStoreIdAndIdIn(eq(storeId), any())).thenReturn(List.of(menu));
+		when(menuService.loadMenusForPosting(eq(storeId), any())).thenReturn(Map.of(menuId, menu));
 		when(noShowPostRepository.findForUpdate(eq(storeId), eq(menuId), any())).thenReturn(Optional.empty());
 
 		OffsetDateTime expireAt = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(30);
@@ -117,7 +125,7 @@ class NoShowPostServiceTest {
 		ReflectionTestUtils.setField(existing, "qtyRemaining", 1);
 
 		when(storeRepository.findByOwnerUserId(userId)).thenReturn(Optional.of(store));
-		when(menuRepository.findByStoreIdAndIdIn(eq(storeId), any())).thenReturn(List.of(menu));
+		when(menuService.loadMenusForPosting(eq(storeId), any())).thenReturn(Map.of(menuId, menu));
 		when(noShowPostRepository.findForUpdate(eq(storeId), eq(menuId), any())).thenReturn(Optional.of(existing));
 
 		NoShowBatchCreateRequest request = new NoShowBatchCreateRequest(
@@ -135,6 +143,28 @@ class NoShowPostServiceTest {
 		assertThat(existing.getDiscountedUnitPrice()).isEqualTo(7500);
 		assertThat(existing.getQtyTotal()).isEqualTo(4);
 		assertThat(existing.getQtyRemaining()).isEqualTo(4);
+	}
+
+	@Test
+	void createBatch_rejectsMenuThatIsNotOnSale() {
+		UUID userId = UUID.randomUUID();
+		UUID storeId = UUID.randomUUID();
+		UUID menuId = UUID.randomUUID();
+		Store store = createStore(storeId, userId, LocalTime.of(10, 0), LocalTime.of(22, 0));
+
+		when(storeRepository.findByOwnerUserId(userId)).thenReturn(Optional.of(store));
+		when(menuService.loadMenusForPosting(eq(storeId), any()))
+			.thenThrow(new BusinessException(ErrorCode.MENU_NOT_ON_SALE, "판매중이 아닌 메뉴가 포함되어 있습니다."));
+
+		NoShowBatchCreateRequest request = new NoShowBatchCreateRequest(
+			List.of(new NoShowBatchCreateRequest.Item(menuId, 1)),
+			40,
+			OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(30)
+		);
+
+		assertThatThrownBy(() -> noShowPostService.createBatch(userId, request))
+			.isInstanceOf(BusinessException.class)
+			.satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo(ErrorCode.MENU_NOT_ON_SALE));
 	}
 
 	@Test
@@ -192,7 +222,18 @@ class NoShowPostServiceTest {
 	}
 
 	private Menu createMenu(UUID menuId, UUID storeId, String name, int price) {
-		Menu menu = Menu.create(storeId, name, "설명", price, null, null, null, ImageStatus.pending);
+		Menu menu = Menu.create(
+			storeId,
+			name,
+			"설명",
+			price,
+			MenuStatus.on_sale,
+			MenuType.single,
+			null,
+			null,
+			null,
+			ImageStatus.pending
+		);
 		ReflectionTestUtils.setField(menu, "id", menuId);
 		return menu;
 	}

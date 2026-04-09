@@ -44,6 +44,16 @@ public class Menu extends BaseEntity {
 	@Column(name = "price_krw", nullable = false)
 	private int priceKrw;
 
+	@Enumerated(EnumType.STRING)
+	@JdbcTypeCode(SqlTypes.NAMED_ENUM)
+	@Column(name = "status", columnDefinition = "menu_status", nullable = false)
+	private MenuStatus status = MenuStatus.sold_out;
+
+	@Enumerated(EnumType.STRING)
+	@JdbcTypeCode(SqlTypes.NAMED_ENUM)
+	@Column(name = "type", columnDefinition = "menu_type", nullable = false)
+	private MenuType type = MenuType.single;
+
 	@Column(name = "image_key")
 	private String imageKey;
 
@@ -65,6 +75,8 @@ public class Menu extends BaseEntity {
 		String name,
 		String description,
 		int priceKrw,
+		MenuStatus status,
+		MenuType type,
 		String imageKey,
 		String imageMime,
 		String imageEtag,
@@ -74,6 +86,12 @@ public class Menu extends BaseEntity {
 		this.name = name;
 		this.description = description;
 		this.priceKrw = priceKrw;
+		if (status != null) {
+			this.status = status;
+		}
+		if (type != null) {
+			this.type = type;
+		}
 		this.imageKey = imageKey;
 		this.imageMime = imageMime;
 		this.imageEtag = imageEtag;
@@ -83,14 +101,20 @@ public class Menu extends BaseEntity {
 	}
 
 	public static Menu create(UUID storeId, String name, String description, int priceKrw,
-		String imageKey, String imageMime, String imageEtag, ImageStatus imageStatus) {
-		return new Menu(storeId, name, description, priceKrw, imageKey, imageMime, imageEtag, imageStatus);
+		MenuStatus status, MenuType type, String imageKey, String imageMime, String imageEtag, ImageStatus imageStatus) {
+		return new Menu(storeId, name, description, priceKrw, status, type, imageKey, imageMime, imageEtag, imageStatus);
 	}
 
 	public void update(String name, String description, Integer priceKrw) {
 		if (name != null) this.name = name;
 		if (description != null) this.description = description;
 		if (priceKrw != null) this.priceKrw = priceKrw;
+	}
+
+	public void changeStatus(MenuStatus status) {
+		if (status != null) {
+			this.status = status;
+		}
 	}
 
 	public void updateImage(String key, String mime, String etag, ImageStatus status) {
@@ -100,5 +124,13 @@ public class Menu extends BaseEntity {
 		if (status != null) {
 			this.imageStatus = status;
 		}
+	}
+
+	public boolean isSet() {
+		return type == MenuType.set;
+	}
+
+	public boolean isSingle() {
+		return type == MenuType.single;
 	}
 }

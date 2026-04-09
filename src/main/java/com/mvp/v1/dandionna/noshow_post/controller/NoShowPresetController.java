@@ -22,7 +22,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("api/v1/owner/no-show-presets")
+@RequestMapping("/api/v1/owner/no-show-presets")
 @Validated
 @RequiredArgsConstructor
 public class NoShowPresetController {
@@ -47,4 +47,3 @@ public class NoShowPresetController {
 		return ApiResponse.ok(noShowPresetService.upsertDefaultPreset(ownerId, request));
 	}
 }
-

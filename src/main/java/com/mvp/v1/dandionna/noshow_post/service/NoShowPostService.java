@@ -28,6 +28,7 @@ import com.mvp.v1.dandionna.common.exeption.BusinessException;
 import com.mvp.v1.dandionna.favorite.service.FavoriteNotificationService;
 import com.mvp.v1.dandionna.menu.entity.Menu;
 import com.mvp.v1.dandionna.menu.repository.MenuRepository;
+import com.mvp.v1.dandionna.menu.service.MenuService;
 import com.mvp.v1.dandionna.noshow_post.NoShowConstants;
 import com.mvp.v1.dandionna.noshow_post.dto.NoShowBatchCreateRequest;
 import com.mvp.v1.dandionna.noshow_post.dto.NoShowPostDetailResponse;
@@ -47,6 +48,7 @@ public class NoShowPostService {
 
 	private final StoreRepository storeRepository;
 	private final MenuRepository menuRepository;
+	private final MenuService menuService;
 	private final NoShowPostRepository noShowPostRepository;
 	private final NoShowPostHistoryRepository noShowPostHistoryRepository;
 	private final FavoriteNotificationService favoriteNotificationService;
@@ -144,7 +146,7 @@ public class NoShowPostService {
 
 	private void publishListings(Store store, int discountPercent, OffsetDateTime startAtUtc, OffsetDateTime expireAtUtc,
 		List<NoShowBatchCreateRequest.Item> items) {
-		Map<UUID, Menu> menuMap = loadMenus(store.getId(), items);
+		Map<UUID, Menu> menuMap = loadSellableMenus(store.getId(), items);
 
 		for (NoShowBatchCreateRequest.Item item : items) {
 			Menu menu = menuMap.get(item.menuId());
@@ -214,6 +216,20 @@ public class NoShowPostService {
 		if (ids.size() != items.size()) {
 			throw new BusinessException(ErrorCode.BAD_REQUEST, "동일한 메뉴가 중복되었습니다.");
 		}
+		return loadMenusByIds(storeId, ids);
+	}
+
+	private Map<UUID, Menu> loadSellableMenus(UUID storeId, List<NoShowBatchCreateRequest.Item> items) {
+		Set<UUID> ids = items.stream()
+			.map(NoShowBatchCreateRequest.Item::menuId)
+			.collect(Collectors.toSet());
+		if (ids.size() != items.size()) {
+			throw new BusinessException(ErrorCode.BAD_REQUEST, "동일한 메뉴가 중복되었습니다.");
+		}
+		return menuService.loadMenusForPosting(storeId, ids);
+	}
+
+	private Map<UUID, Menu> loadMenusByIds(UUID storeId, Set<UUID> ids) {
 		List<Menu> menus = menuRepository.findByStoreIdAndIdIn(storeId, ids);
 		if (menus.size() != ids.size()) {
 			throw new BusinessException(ErrorCode.NOT_FOUND, "존재하지 않는 메뉴가 포함되어 있습니다.");

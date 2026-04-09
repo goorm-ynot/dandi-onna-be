@@ -11,8 +11,133 @@
 - `POST /api/v1/stores` / `PATCH /api/v1/stores`
 - `GET /api/v1/stores/me`
 - `GET /api/v1/stores/me/mypage` (storeName/ownerName/주소/영업시간 요약)
-- `POST /api/v1/owner/menus` / `PATCH /api/v1/owner/menus/{id}` / `DELETE /api/v1/owner/menus/{id}` / `GET {id}` / `GET ?page&size`
-- 업로드: `POST /api/v1/stores/uploads/presign|confirm|view`, `POST /api/v1/menus/{id}/uploads/presign|confirm|view`
+- `POST /api/v1/owner/menus`
+- `PATCH /api/v1/owner/menus/{menuId}`
+- `POST /api/v1/owner/menus/{menuId}/status`
+- `DELETE /api/v1/owner/menus/{menuId}`
+- `GET /api/v1/owner/menus/{menuId}`
+- `GET /api/v1/owner/menus?page&size&keyword&type&effectiveStatus`
+- 업로드: `POST /api/v1/stores/uploads/presign|confirm`, `GET /api/v1/stores/uploads/view`
+- 메뉴 이미지 임시 업로드: `POST /api/v1/owner/menu-images/temp/presign|confirm`, `GET /api/v1/menus/{id}/uploads/view`
+
+### 메뉴 관리 상세
+- 모든 메뉴 API는 `OWNER` 권한과 Bearer 인증이 필요합니다.
+- 생성된 메뉴의 저장 상태는 항상 `SOLD_OUT`으로 시작합니다.
+- `status` 변경은 일반 수정 API가 아니라 전용 API `POST /api/v1/owner/menus/{menuId}/status` 로만 처리합니다.
+- 세트 메뉴는 같은 매장의 `SINGLE` 메뉴만 1개 이상 포함할 수 있습니다. 세트 안에 세트를 넣는 중첩 구성은 허용하지 않습니다.
+- 메뉴 이미지를 바꾸는 경우에는 먼저 임시 업로드 API로 `imageUploadToken` 을 발급/확정한 뒤, 생성 또는 수정 요청에 그 토큰을 포함합니다.
+- `imageUploadToken` 이 없으면 이미지 처리는 건너뛰고 다른 필드만 생성 또는 수정합니다.
+
+#### 0) 메뉴 이미지 임시 업로드
+- `POST /api/v1/owner/menu-images/temp/presign`
+- 요청 필드
+  - `fileName`, `contentType`
+- 응답 필드
+  - `uploadToken`, `url`, `tempKey`, `expiresInSeconds`
+- 처리 순서
+  - presign 발급
+  - 반환된 `url` 로 파일 PUT
+  - `POST /api/v1/owner/menu-images/temp/confirm`
+  - 생성 또는 수정 API에 `imageUploadToken` 포함
+
+```json
+{
+  "fileName": "americano.png",
+  "contentType": "image/png"
+}
+```
+
+```json
+{
+  "uploadToken": "UUID",
+  "url": "https://object-storage.example/presigned-put-url",
+  "tempKey": "temp/menu-images/owner-id/random.png",
+  "expiresInSeconds": 300
+}
+```
+
+#### 0-1) 메뉴 이미지 임시 업로드 Confirm
+- `POST /api/v1/owner/menu-images/temp/confirm`
+- 요청 바디: `{ "uploadToken": "UUID", "etag": "etag-value" }`
+- 응답 필드
+  - `uploadToken`, `tempKey`, `contentType`, `etag`, `confirmed`
+
+#### 1) 메뉴 생성
+- `POST /api/v1/owner/menus`
+- 요청 필드
+  - `name`, `priceKrw`
+  - `description`: 선택 입력, 미입력 가능
+  - `type`: `SINGLE` 또는 `SET`
+  - `type=SET` 이면 `components[{ menuId, quantity }]` 필수
+  - `type=SINGLE` 이면 `components` 전송 금지
+  - 선택 이미지 토큰: `imageUploadToken`
+- 응답 필드
+  - `id`, `name`, `description`, `priceKrw`
+  - `imageKey`, `imageMime`, `imageEtag`, `imageStatus`
+  - `type`, `status`, `effectiveStatus`
+  - `components[]`
+
+```json
+{
+  "name": "점심 세트",
+  "description": "단품 2종 구성",
+  "priceKrw": 12900,
+  "type": "SET",
+  "imageUploadToken": "UUID",
+  "components": [
+    { "menuId": "UUID", "quantity": 1 },
+    { "menuId": "UUID", "quantity": 2 }
+  ]
+}
+```
+
+#### 2) 메뉴 일반 수정
+- `PATCH /api/v1/owner/menus/{menuId}`
+- 수정 가능 필드
+  - `name`, `description`, `priceKrw`
+  - `imageUploadToken`
+  - 세트 메뉴일 때만 `components`
+- 제약
+  - `status` 수정 불가
+  - `type` 수정 불가
+  - `components` 가 오면 세트 구성을 전체 교체합니다.
+  - `description` 은 선택 수정 필드입니다.
+  - `description` 이 미전송, `null`, 공백 문자열이면 기존 설명을 유지합니다.
+  - `imageUploadToken` 이 없으면 기존 이미지 메타를 유지합니다.
+  - 이미지 삭제 전용 기능은 현재 제공하지 않습니다.
+
+#### 3) 메뉴 상태 전용 변경
+- `POST /api/v1/owner/menus/{menuId}/status`
+- 요청 바디: `{ "onSale": true }` 또는 `{ "onSale": false }`
+- 응답 필드
+  - `menuId`
+  - `status`: 저장 상태
+  - `effectiveStatus`: 계산 상태
+- 세트 메뉴에 `onSale=true` 를 보내도 구성 단품 중 하나라도 품절이면 응답은 `status=ON_SALE`, `effectiveStatus=SOLD_OUT` 입니다.
+
+#### 4) 메뉴 목록 조회
+- `GET /api/v1/owner/menus?page=0&size=10&keyword=세트&type=SET&effectiveStatus=ON_SALE`
+- 쿼리 파라미터
+  - `page`, `size`
+  - `keyword`
+  - `type`: 미전송/빈 값이면 전체, `SINGLE` 이면 단품, `SET` 이면 세트
+  - `effectiveStatus`: `ON_SALE`, `SOLD_OUT`
+- 목록 응답 항목
+  - `id`, `name`, `description`, `priceKrw`
+  - `imageKey`, `imageMime`, `imageEtag`, `imageStatus`
+  - `type`, `status`, `effectiveStatus`
+  - `componentCount`
+
+#### 5) 제품 상세 조회
+- `GET /api/v1/owner/menus/{menuId}`
+- 기존 owner 메뉴 상세 API를 제품 상세 조회 API로 사용합니다.
+- 단품은 top-level `description` 에 해당 단품 설명이 내려가고 `components` 는 빈 배열입니다.
+- 세트는 top-level `description` 에 해당 세트 설명이 내려가고, `components[{ menuId, name, status, effectiveStatus, quantity }]` 는 현재 구조를 유지합니다.
+
+#### 6) 메뉴 삭제
+- `DELETE /api/v1/owner/menus/{menuId}`
+- 세트에 참조 중인 단품 삭제는 `409 CONFLICT` 와 `MENU_COMPONENT_IN_USE` 로 차단됩니다.
+- 세트 메뉴 자체 삭제는 허용됩니다.
 
 ## 노쇼 글 (사장님)
 - `POST /api/v1/owner/no-show-posts/batch`

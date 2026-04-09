@@ -7,7 +7,8 @@ import java.util.UUID;
  */
 public enum UploadTarget {
 	STORE_IMAGE("stores/%s/%s%s"),
-	MENU_IMAGE("menus/%s/%s%s");
+	MENU_IMAGE("menus/%s/%s%s"),
+	TEMP_MENU_IMAGE("temp/menu-images/%s/%s%s");
 
 	private final String pattern;
 

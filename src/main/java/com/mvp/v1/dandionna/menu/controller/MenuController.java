@@ -18,7 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mvp.v1.dandionna.common.dto.ApiResponse;
 import com.mvp.v1.dandionna.common.service.SecurityUtils;
 import com.mvp.v1.dandionna.menu.dto.MenuCreateRequest;
-import com.mvp.v1.dandionna.menu.dto.MenuResponse;
+import com.mvp.v1.dandionna.menu.dto.MenuDetailResponse;
+import com.mvp.v1.dandionna.menu.dto.MenuStatusChangeRequest;
+import com.mvp.v1.dandionna.menu.dto.MenuStatusResponse;
+import com.mvp.v1.dandionna.menu.dto.MenuSummaryResponse;
 import com.mvp.v1.dandionna.menu.dto.MenuUpdateRequest;
 import com.mvp.v1.dandionna.menu.service.MenuService;
 
@@ -29,7 +32,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
-@RequestMapping("/owner/menus")
+@RequestMapping("/api/v1/owner/menus")
 @Validated
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('OWNER')")
@@ -40,7 +43,7 @@ public class MenuController {
 	@Operation(summary = "메뉴 생성")
 	@SecurityRequirement(name = "bearerAuth")
 	@PostMapping
-	public ResponseEntity<ApiResponse<MenuResponse>> create(@Valid @RequestBody MenuCreateRequest request) {
+	public ResponseEntity<ApiResponse<MenuDetailResponse>> create(@Valid @RequestBody MenuCreateRequest request) {
 		UUID ownerId = SecurityUtils.getCurrentUserId();
 		return ApiResponse.created(menuService.create(ownerId, request));
 	}
@@ -48,7 +51,7 @@ public class MenuController {
 	@Operation(summary = "메뉴 상세 조회")
 	@SecurityRequirement(name = "bearerAuth")
 	@GetMapping("/{menuId}")
-	public ResponseEntity<ApiResponse<MenuResponse>> get(@PathVariable UUID menuId) {
+	public ResponseEntity<ApiResponse<MenuDetailResponse>> get(@PathVariable UUID menuId) {
 		UUID ownerId = SecurityUtils.getCurrentUserId();
 		return ApiResponse.ok(menuService.get(ownerId, menuId));
 	}
@@ -56,23 +59,37 @@ public class MenuController {
 	@Operation(summary = "메뉴 목록 조회")
 	@SecurityRequirement(name = "bearerAuth")
 	@GetMapping
-	public ResponseEntity<ApiResponse<Page<MenuResponse>>> list(
+	public ResponseEntity<ApiResponse<Page<MenuSummaryResponse>>> list(
 		@RequestParam(defaultValue = "0") int page,
-		@RequestParam(defaultValue = "10") int size
+		@RequestParam(defaultValue = "10") int size,
+		@RequestParam(required = false) String keyword,
+		@RequestParam(required = false) String type,
+		@RequestParam(required = false) String effectiveStatus
 	) {
 		UUID ownerId = SecurityUtils.getCurrentUserId();
-		return ApiResponse.ok(menuService.list(ownerId, page, size));
+		return ApiResponse.ok(menuService.list(ownerId, page, size, keyword, type, effectiveStatus));
 	}
 
 	@Operation(summary = "메뉴 수정")
 	@SecurityRequirement(name = "bearerAuth")
 	@PatchMapping("/{menuId}")
-	public ResponseEntity<ApiResponse<MenuResponse>> update(
+	public ResponseEntity<ApiResponse<MenuDetailResponse>> update(
 		@PathVariable UUID menuId,
 		@Valid @RequestBody MenuUpdateRequest request
 	) {
 		UUID ownerId = SecurityUtils.getCurrentUserId();
 		return ApiResponse.ok(menuService.update(ownerId, menuId, request));
+	}
+
+	@Operation(summary = "메뉴 판매 상태 변경")
+	@SecurityRequirement(name = "bearerAuth")
+	@PostMapping("/{menuId}/status")
+	public ResponseEntity<ApiResponse<MenuStatusResponse>> changeStatus(
+		@PathVariable UUID menuId,
+		@Valid @RequestBody MenuStatusChangeRequest request
+	) {
+		UUID ownerId = SecurityUtils.getCurrentUserId();
+		return ApiResponse.ok(menuService.changeStatus(ownerId, menuId, request.onSale()));
 	}
 
 	@Operation(summary = "메뉴 삭제")

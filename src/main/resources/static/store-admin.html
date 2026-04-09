@@ -46,6 +46,11 @@
       color: #f8fafc;
       box-sizing: border-box;
     }
+    input[type="checkbox"] {
+      width: auto;
+      margin-right: 8px;
+      padding: 0;
+    }
     textarea {
       resize: vertical;
       min-height: 64px;
@@ -106,6 +111,101 @@
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 16px;
       margin-top: 16px;
+    }
+    .menu-builder {
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid #2a2f36;
+      border-radius: 12px;
+      background: #121720;
+    }
+    .menu-builder[hidden] {
+      display: none;
+    }
+    .menu-result-panels {
+      display: grid;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .menu-detail-panel,
+    .menu-search-results,
+    .menu-component-selected {
+      border: 1px solid #2a2f36;
+      border-radius: 12px;
+      background: #141820;
+      padding: 14px;
+    }
+    .menu-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .menu-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #1d2430;
+      color: #dbeafe;
+      font-size: 0.78rem;
+    }
+    .menu-badge.ok {
+      background: rgba(34, 197, 94, 0.18);
+      color: #bbf7d0;
+    }
+    .menu-badge.warn {
+      background: rgba(248, 113, 113, 0.18);
+      color: #fecaca;
+    }
+    .menu-card-actions,
+    .menu-action-row,
+    .menu-search-item,
+    .menu-component-item {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .menu-card-actions button,
+    .menu-action-row button,
+    .menu-search-item button,
+    .menu-component-item button {
+      margin-top: 0;
+    }
+    .menu-search-item,
+    .menu-component-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #2a2f36;
+    }
+    .menu-search-item:last-child,
+    .menu-component-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .menu-search-item:first-child,
+    .menu-component-item:first-child {
+      padding-top: 0;
+    }
+    .menu-item-main {
+      display: grid;
+      gap: 6px;
+    }
+    .menu-item-title {
+      font-weight: 600;
+    }
+    .menu-qty-input {
+      width: 88px;
+    }
+    .menu-empty {
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+    .menu-detail-components {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
     }
     .menu-card {
       border: 1px solid #2a2f36;
@@ -436,38 +536,102 @@
 
   <section id="menu-section">
     <h2>메뉴 관리</h2>
+    <p class="hint">신규 메뉴는 항상 `SOLD_OUT` 으로 생성됩니다. 설명은 선택 입력이며, 세트 메뉴는 단품 메뉴를 1개 이상 포함해야 합니다.</p>
     <form id="menu-create-form">
-      <label>메뉴명
-        <input name="name" required>
-      </label>
+      <div class="row">
+        <label>메뉴명
+          <input name="name" required>
+        </label>
+        <label>메뉴 유형
+          <select name="type">
+            <option value="SINGLE">단품</option>
+            <option value="SET">세트</option>
+          </select>
+        </label>
+        <label>가격(원)
+          <input name="priceKrw" type="number" min="0" required>
+        </label>
+      </div>
       <label>설명
         <textarea name="description" placeholder="선택 입력"></textarea>
       </label>
-      <label>가격(원)
-        <input name="priceKrw" type="number" min="0" required>
+      <label>메뉴 이미지 파일
+        <input name="imageFile" type="file" accept="image/*">
       </label>
+      <div id="create-components-builder" class="menu-builder" hidden>
+        <p class="hint">세트로 구성할 단품 메뉴를 검색해 추가하세요. 기본 상태가 `SOLD_OUT` 인 단품도 검색됩니다.</p>
+        <div class="row">
+          <label>단품 검색어
+            <input id="create-component-keyword" class="menu-component-keyword" data-builder="create" placeholder="메뉴명 또는 설명">
+          </label>
+        </div>
+        <div class="menu-action-row">
+          <button type="button" class="secondary" data-menu-search data-builder="create">단품 검색</button>
+        </div>
+        <div id="create-component-results" class="menu-search-results"></div>
+        <p class="hint">선택된 구성품</p>
+        <div id="create-component-selected" class="menu-component-selected"></div>
+      </div>
       <button type="submit">메뉴 생성</button>
     </form>
 
     <form id="menu-update-form">
-      <label>메뉴 ID
-        <input name="menuId" placeholder="UUID" required>
-      </label>
-      <label>메뉴명
-        <input name="name">
-      </label>
+      <div class="row">
+        <label>메뉴 ID
+          <input name="menuId" placeholder="UUID" required>
+        </label>
+        <label>현재 메뉴 유형
+          <input name="resolvedTypeLabel" placeholder="제품 상세 조회 시 자동 반영" readonly>
+          <input type="hidden" name="resolvedType">
+        </label>
+      </div>
+      <div class="row">
+        <label>메뉴명
+          <input name="name">
+        </label>
+        <label>가격(원)
+          <input name="priceKrw" type="number" min="0">
+        </label>
+      </div>
       <label>설명
         <textarea name="description"></textarea>
       </label>
-      <label>가격(원)
-        <input name="priceKrw" type="number" min="0">
+      <label>새 메뉴 이미지 파일
+        <input name="imageFile" type="file" accept="image/*">
       </label>
+      <label>
+        <input name="replaceComponents" type="checkbox">
+        세트 구성 전체 교체
+      </label>
+      <div id="update-components-builder" class="menu-builder" hidden>
+        <p class="hint">세트 제품 상세를 먼저 조회한 뒤 구성을 바꾸세요. 체크 시 현재 구성이 전체 교체됩니다.</p>
+        <div class="row">
+          <label>단품 검색어
+            <input id="update-component-keyword" class="menu-component-keyword" data-builder="update" placeholder="메뉴명 또는 설명">
+          </label>
+        </div>
+        <div class="menu-action-row">
+          <button type="button" class="secondary" data-menu-search data-builder="update">단품 검색</button>
+        </div>
+        <div id="update-component-results" class="menu-search-results"></div>
+        <p class="hint">교체할 구성품</p>
+        <div id="update-component-selected" class="menu-component-selected"></div>
+      </div>
       <button type="submit" class="secondary">메뉴 수정</button>
     </form>
 
     <form id="menu-get-form" class="flex">
       <input name="menuId" placeholder="메뉴 ID" required>
-      <button type="submit" class="secondary">메뉴 상세 조회</button>
+      <button type="submit" class="secondary">제품 상세 조회</button>
+    </form>
+
+    <form id="menu-status-form" class="flex">
+      <input name="menuId" placeholder="상태 변경할 메뉴 ID" required>
+      <select name="onSale">
+        <option value="true">판매중(ON)</option>
+        <option value="false">품절(OFF)</option>
+      </select>
+      <button type="submit" class="secondary">상태 전용 API 호출</button>
     </form>
 
     <form id="menu-delete-form" class="flex">
@@ -478,25 +642,30 @@
     <form id="menu-list-form" class="flex">
       <input name="page" type="number" min="0" value="0">
       <input name="size" type="number" min="1" value="10">
+      <input name="keyword" placeholder="검색어">
+      <select name="type">
+        <option value="">유형 전체</option>
+        <option value="SINGLE">단품</option>
+        <option value="SET">세트</option>
+      </select>
+      <select name="effectiveStatus">
+        <option value="">실판매 상태 전체</option>
+        <option value="ON_SALE">판매중</option>
+        <option value="SOLD_OUT">품절</option>
+      </select>
       <button type="submit" class="secondary">메뉴 목록 조회</button>
     </form>
     <pre id="menu-result"></pre>
-    <div class="hint">최근 조회된 메뉴 목록이 아래 카드 형태로 표시됩니다.</div>
-    <div id="menu-display"></div>
-  </section>
-
-  <section id="menu-image-upload">
-    <h3>메뉴 이미지 업로드</h3>
-    <p class="hint">메뉴를 먼저 생성한 뒤 해당 메뉴 ID로 이미지를 업로드하세요.</p>
-    <div class="row">
-      <label>메뉴 ID
-        <input id="menu-upload-id" placeholder="UUID">
-      </label>
-      <label>이미지 파일
-        <input id="menu-upload-file" type="file" accept="image/*">
-      </label>
+    <div class="menu-result-panels">
+      <div>
+        <div class="hint">최근 조회된 제품 상세가 아래에 구조화되어 표시됩니다.</div>
+        <div id="menu-detail-display" class="menu-detail-panel"></div>
+      </div>
+      <div>
+        <div class="hint">최근 조회된 메뉴 목록이 아래 카드 형태로 표시됩니다.</div>
+        <div id="menu-display"></div>
+      </div>
     </div>
-    <button onclick="handleMenuImageUpload()">메뉴 이미지 업로드 실행</button>
   </section>
 
   <section id="image-upload">
@@ -600,6 +769,11 @@
       consumerBaseInput.value = state.baseUrl;
     }
     const menuImageCache = new Map();
+    const menuComponentState = {
+      create: { selected: [], lastResults: null },
+      update: { selected: [], lastResults: null },
+    };
+    let lastMenuListQuery = null;
     document.querySelectorAll(".tab-button").forEach(btn => {
       btn.addEventListener("click", () => switchTab(btn.dataset.target));
     });
@@ -811,6 +985,7 @@
     document.getElementById("menu-create-form").addEventListener("submit", handleMenuCreate);
     document.getElementById("menu-update-form").addEventListener("submit", handleMenuUpdate);
     document.getElementById("menu-get-form").addEventListener("submit", handleMenuGet);
+    document.getElementById("menu-status-form").addEventListener("submit", handleMenuStatusChange);
     document.getElementById("menu-delete-form").addEventListener("submit", handleMenuDelete);
     document.getElementById("menu-list-form").addEventListener("submit", handleMenuList);
     document.getElementById("noshow-form").addEventListener("submit", handleNoshowCreate);
@@ -826,6 +1001,7 @@
     document.getElementById("favorite-add-btn").addEventListener("click", () => handleFavorite("POST"));
     document.getElementById("favorite-remove-btn").addEventListener("click", () => handleFavorite("DELETE"));
     document.getElementById("consumer-order-btn").addEventListener("click", handleConsumerOrderCreate);
+    bindMenuFormEnhancements();
     addNoshowItem();
 
     async function handleFetch(event) {
@@ -901,22 +1077,143 @@ async function loadStoreImage() {
       document.getElementById("store-image-box").style.display = "none";
     }
 
+    function bindMenuFormEnhancements() {
+      document.querySelector("#menu-create-form [name='type']").addEventListener("change", syncCreateComponentsBuilder);
+      document.querySelector("#menu-update-form [name='replaceComponents']").addEventListener("change", syncUpdateComponentsBuilder);
+      document.querySelectorAll("[data-menu-search]").forEach(button => {
+        button.addEventListener("click", () => searchSingleMenus(button.dataset.builder));
+      });
+      document.querySelectorAll(".menu-component-keyword").forEach(input => {
+        input.addEventListener("keydown", event => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            searchSingleMenus(input.dataset.builder);
+          }
+        });
+      });
+      syncCreateComponentsBuilder();
+      syncUpdateComponentsBuilder();
+      renderMenuComponentState("create");
+      renderMenuComponentState("update");
+      clearMenuDetail();
+    }
+
+    function emptyToNull(value) {
+      const text = value?.trim();
+      return text ? text : null;
+    }
+
+    function setMenuResult(body) {
+      document.getElementById("menu-result").textContent = JSON.stringify(body, null, 2);
+    }
+
+    function buildMenuListQuery(form) {
+      return {
+        page: Number(form.page.value) || 0,
+        size: Number(form.size.value) || 10,
+        keyword: form.keyword.value.trim(),
+        type: form.type.value,
+        effectiveStatus: form.effectiveStatus.value,
+      };
+    }
+
+    function toMenuListSearchParams(query) {
+      const params = new URLSearchParams({
+        page: String(query.page ?? 0),
+        size: String(query.size ?? 10),
+      });
+      if (query.keyword) params.set("keyword", query.keyword);
+      if (query.type) params.set("type", query.type);
+      if (query.effectiveStatus) params.set("effectiveStatus", query.effectiveStatus);
+      return params;
+    }
+
+    function extractEtag(response) {
+      let etag = response.headers.get("ETag") || response.headers.get("etag");
+      if (!etag) {
+        throw new Error("ETag 헤더가 없습니다.");
+      }
+      return etag.replace(/"/g, "");
+    }
+
+    async function prepareMenuImageUpload(file) {
+      appendLog("메뉴 이미지 임시 Presign 요청", { fileName: file.name, type: file.type });
+      const presignRes = await fetch(`${state.baseUrl}/api/v1/owner/menu-images/temp/presign`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type || "application/octet-stream",
+        }),
+      });
+      const presignBody = await presignRes.json();
+      appendLog("메뉴 이미지 임시 Presign 응답", presignBody);
+      if (!presignBody?.success) {
+        throw new Error("메뉴 이미지 Presign 실패");
+      }
+
+      const { url, uploadToken, tempKey } = presignBody.data;
+      const putRes = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      if (!putRes.ok) {
+        throw new Error(`메뉴 이미지 업로드 실패: ${putRes.status}`);
+      }
+
+      const etag = extractEtag(putRes);
+      appendLog("메뉴 이미지 임시 Confirm 요청", { uploadToken, tempKey, etag });
+      const confirmRes = await fetch(`${state.baseUrl}/api/v1/owner/menu-images/temp/confirm`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ uploadToken, etag }),
+      });
+      const confirmBody = await confirmRes.json();
+      appendLog("메뉴 이미지 임시 Confirm 응답", confirmBody);
+      if (!confirmBody?.success || !confirmBody?.data?.uploadToken) {
+        throw new Error("메뉴 이미지 Confirm 실패");
+      }
+      return confirmBody.data.uploadToken;
+    }
+
     async function handleMenuCreate(event) {
       event.preventDefault();
       const form = event.target;
-      const payload = {
-        name: form.name.value.trim(),
-        description: form.description.value.trim() || null,
-        priceKrw: Number(form.priceKrw.value)
-      };
       try {
+        const type = form.type.value || "SINGLE";
+        const payload = {
+          name: form.name.value.trim(),
+          description: emptyToNull(form.description.value),
+          priceKrw: Number(form.priceKrw.value),
+          type,
+        };
+        const imageFile = form.imageFile.files[0];
+        if (imageFile) {
+          payload.imageUploadToken = await prepareMenuImageUpload(imageFile);
+        }
+        if (type === "SET") {
+          payload.components = collectMenuComponents("create");
+        }
         appendLog("메뉴 생성 요청", payload);
-        const res = await fetch(`${state.baseUrl}/owner/menus`, {
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/menus`, {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify(payload),
         });
         const body = await res.json();
+        setMenuResult(body);
+        renderMenuDetail(body);
+        if (body?.success && body?.data) {
+          menuImageCache.delete(body.data.id);
+          populateMenuUpdateForm(body.data);
+          form.reset();
+          form.type.value = "SINGLE";
+          menuComponentState.create.lastResults = null;
+          setMenuComponents("create", []);
+          syncCreateComponentsBuilder();
+          await reloadLastMenuList();
+        }
         appendLog("메뉴 생성 응답", body);
       } catch (err) {
         appendLog("메뉴 생성 실패", { error: err.message });
@@ -931,19 +1228,36 @@ async function loadStoreImage() {
         appendLog("메뉴 ID를 입력하세요.");
         return;
       }
-      const payload = {
-        name: form.name.value.trim() || null,
-        description: form.description.value.trim() || null,
-        priceKrw: form.priceKrw.value ? Number(form.priceKrw.value) : null
-      };
       try {
+        const payload = {
+          name: emptyToNull(form.name.value),
+          description: emptyToNull(form.description.value),
+          priceKrw: form.priceKrw.value ? Number(form.priceKrw.value) : null,
+        };
+        const imageFile = form.imageFile.files[0];
+        if (imageFile) {
+          payload.imageUploadToken = await prepareMenuImageUpload(imageFile);
+        }
+        if (form.replaceComponents.checked) {
+          if (normalizeEnum(form.resolvedType.value) !== "SET") {
+            throw new Error("세트 메뉴 상세를 먼저 조회한 뒤 구성 교체를 진행하세요.");
+          }
+          payload.components = collectMenuComponents("update");
+        }
         appendLog("메뉴 수정 요청", { menuId, payload });
-        const res = await fetch(`${state.baseUrl}/owner/menus/${menuId}`, {
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/menus/${menuId}`, {
           method: "PATCH",
           headers: authHeaders(),
           body: JSON.stringify(payload),
         });
         const body = await res.json();
+        setMenuResult(body);
+        renderMenuDetail(body);
+        if (body?.success && body?.data) {
+          menuImageCache.delete(body.data.id);
+          populateMenuUpdateForm(body.data);
+          await reloadLastMenuList();
+        }
         appendLog("메뉴 수정 응답", body);
       } catch (err) {
         appendLog("메뉴 수정 실패", { error: err.message });
@@ -953,32 +1267,44 @@ async function loadStoreImage() {
     async function handleMenuGet(event) {
       event.preventDefault();
       const menuId = event.target.menuId.value.trim();
-      if (!menuId) return appendLog("메뉴 ID를 입력하세요.");
-      try {
-        appendLog("메뉴 상세 조회 요청", { menuId });
-        const res = await fetch(`${state.baseUrl}/owner/menus/${menuId}`, {
-          method: "GET",
-          headers: authHeaders(),
-        });
-        const body = await res.json();
-        document.getElementById("menu-result").textContent = JSON.stringify(body, null, 2);
-        appendLog("메뉴 상세 조회 응답", body);
-      } catch (err) {
-        appendLog("메뉴 상세 조회 실패", { error: err.message });
+      if (!menuId) {
+        appendLog("메뉴 ID를 입력하세요.");
+        return;
       }
+      await loadMenuDetail(menuId);
+    }
+
+    async function handleMenuStatusChange(event) {
+      event.preventDefault();
+      const form = event.target;
+      const menuId = form.menuId.value.trim();
+      if (!menuId) {
+        appendLog("메뉴 ID를 입력하세요.");
+        return;
+      }
+      await submitMenuStatus(menuId, form.onSale.value === "true");
     }
 
     async function handleMenuDelete(event) {
       event.preventDefault();
       const menuId = event.target.menuId.value.trim();
-      if (!menuId) return appendLog("삭제할 메뉴 ID를 입력하세요.");
+      if (!menuId) {
+        appendLog("삭제할 메뉴 ID를 입력하세요.");
+        return;
+      }
       try {
         appendLog("메뉴 삭제 요청", { menuId });
-        const res = await fetch(`${state.baseUrl}/owner/menus/${menuId}`, {
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/menus/${menuId}`, {
           method: "DELETE",
           headers: authHeaders(),
         });
         const body = await res.json();
+        setMenuResult(body);
+        if (body?.success) {
+          menuImageCache.delete(menuId);
+          clearMenuDetail();
+          await reloadLastMenuList();
+        }
         appendLog("메뉴 삭제 응답", body);
       } catch (err) {
         appendLog("메뉴 삭제 실패", { error: err.message });
@@ -987,21 +1313,104 @@ async function loadStoreImage() {
 
     async function handleMenuList(event) {
       event.preventDefault();
-      const form = event.target;
-      const page = Number(form.page.value) || 0;
-      const size = Number(form.size.value) || 10;
+      const query = buildMenuListQuery(event.target);
+      lastMenuListQuery = query;
       try {
-        appendLog("메뉴 목록 조회 요청", { page, size });
-        const res = await fetch(`${state.baseUrl}/owner/menus?page=${page}&size=${size}`, {
+        appendLog("메뉴 목록 조회 요청", query);
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/menus?${toMenuListSearchParams(query).toString()}`, {
           method: "GET",
           headers: authHeaders(),
         });
         const body = await res.json();
-        document.getElementById("menu-result").textContent = JSON.stringify(body, null, 2);
+        setMenuResult(body);
         renderMenuList(body);
         appendLog("메뉴 목록 조회 응답", body);
       } catch (err) {
         appendLog("메뉴 목록 조회 실패", { error: err.message });
+      }
+    }
+
+    async function reloadLastMenuList() {
+      if (!lastMenuListQuery) {
+        return;
+      }
+      try {
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/menus?${toMenuListSearchParams(lastMenuListQuery).toString()}`, {
+          method: "GET",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        renderMenuList(body);
+      } catch (err) {
+        appendLog("메뉴 목록 자동 갱신 실패", { error: err.message });
+      }
+    }
+
+    async function loadMenuDetail(menuId, options = {}) {
+      const { quiet = false, updateResult = true } = options;
+      try {
+        if (!quiet) {
+          appendLog("메뉴 상세 조회 요청", { menuId });
+        }
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/menus/${menuId}`, {
+          method: "GET",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        if (updateResult) {
+          setMenuResult(body);
+        }
+        renderMenuDetail(body);
+        if (body?.success && body?.data) {
+          populateMenuUpdateForm(body.data);
+        }
+        if (!quiet) {
+          appendLog("메뉴 상세 조회 응답", body);
+        }
+      } catch (err) {
+        appendLog("메뉴 상세 조회 실패", { error: err.message });
+      }
+    }
+
+    async function submitMenuStatus(menuId, onSale) {
+      const payload = { onSale };
+      try {
+        appendLog("메뉴 상태 변경 요청", { menuId, payload });
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/menus/${menuId}/status`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(payload),
+        });
+        const body = await res.json();
+        setMenuResult(body);
+        if (body?.success) {
+          await loadMenuDetail(menuId, { quiet: true, updateResult: false });
+          await reloadLastMenuList();
+        }
+        appendLog("메뉴 상태 변경 응답", body);
+      } catch (err) {
+        appendLog("메뉴 상태 변경 실패", { error: err.message });
+      }
+    }
+
+    async function searchSingleMenus(builderKey) {
+      const keyword = document.getElementById(`${builderKey}-component-keyword`).value.trim();
+      const params = new URLSearchParams({ page: "0", size: "20", type: "SINGLE" });
+      if (keyword) {
+        params.set("keyword", keyword);
+      }
+      try {
+        appendLog("세트 구성 단품 검색 요청", { builderKey, keyword });
+        const res = await fetch(`${state.baseUrl}/api/v1/owner/menus?${params.toString()}`, {
+          method: "GET",
+          headers: authHeaders(),
+        });
+        const body = await res.json();
+        menuComponentState[builderKey].lastResults = body?.success ? (body.data?.content ?? []) : [];
+        renderMenuComponentState(builderKey);
+        appendLog("세트 구성 단품 검색 응답", body);
+      } catch (err) {
+        appendLog("세트 구성 단품 검색 실패", { error: err.message });
       }
     }
 
@@ -1013,10 +1422,9 @@ async function loadStoreImage() {
         container.textContent = "목록을 불러오지 못했습니다.";
         return;
       }
-      const page = body.data;
-      const menus = page?.content ?? [];
+      const menus = body.data?.content ?? [];
       if (menus.length === 0) {
-        container.textContent = "등록된 메뉴가 없습니다.";
+        container.innerHTML = `<div class="menu-empty">등록된 메뉴가 없습니다.</div>`;
         return;
       }
       menus.forEach(menu => {
@@ -1048,17 +1456,293 @@ async function loadStoreImage() {
       meta.className = "menu-card-meta";
       const priceSpan = document.createElement("span");
       priceSpan.textContent = formatCurrency(menu.priceKrw);
-      const statusSpan = document.createElement("span");
-      statusSpan.textContent = `이미지: ${menu.imageStatus || "pending"}`;
-      meta.append(priceSpan, statusSpan);
+      const typeSpan = document.createElement("span");
+      typeSpan.textContent = formatMenuType(menu.type);
+      meta.append(priceSpan, typeSpan);
       card.appendChild(meta);
+
+      const badges = document.createElement("div");
+      badges.className = "menu-badges";
+      badges.append(
+        createStatusBadge(`저장 ${formatMenuStatus(menu.status)}`, menu.status),
+        createStatusBadge(`실판매 ${formatMenuStatus(menu.effectiveStatus)}`, menu.effectiveStatus),
+        createBadge(`이미지 ${normalizeEnum(menu.imageStatus) || "PENDING"}`),
+        createBadge(`구성 ${menu.componentCount ?? 0}개`)
+      );
+      card.appendChild(badges);
 
       const desc = document.createElement("p");
       desc.className = "menu-card-desc";
       desc.textContent = menu.description || "설명이 없습니다.";
       card.appendChild(desc);
 
+      const actions = document.createElement("div");
+      actions.className = "menu-card-actions";
+      const detailButton = document.createElement("button");
+      detailButton.type = "button";
+      detailButton.className = "secondary";
+      detailButton.textContent = "상세";
+      detailButton.addEventListener("click", () => loadMenuDetail(menu.id));
+
+      const toggleButton = document.createElement("button");
+      toggleButton.type = "button";
+      toggleButton.className = "secondary";
+      toggleButton.textContent = normalizeEnum(menu.status) === "ON_SALE" ? "판매 OFF" : "판매 ON";
+      toggleButton.addEventListener("click", () => submitMenuStatus(menu.id, normalizeEnum(menu.status) !== "ON_SALE"));
+
+      actions.append(detailButton, toggleButton);
+      card.appendChild(actions);
+
       return card;
+    }
+
+    function renderMenuDetail(body) {
+      const container = document.getElementById("menu-detail-display");
+      container.innerHTML = "";
+      if (!body?.success || !body?.data) {
+        clearMenuDetail();
+        return;
+      }
+
+      const menu = body.data;
+      const title = document.createElement("div");
+      title.className = "menu-card-title";
+      title.textContent = menu.name || "(이름 없음)";
+
+      const meta = document.createElement("div");
+      meta.className = "menu-card-meta";
+      const idSpan = document.createElement("span");
+      idSpan.textContent = menu.id || "-";
+      const priceSpan = document.createElement("span");
+      priceSpan.textContent = formatCurrency(menu.priceKrw);
+      meta.append(idSpan, priceSpan);
+
+      const badges = document.createElement("div");
+      badges.className = "menu-badges";
+      badges.append(
+        createBadge(`유형 ${formatMenuType(menu.type)}`),
+        createStatusBadge(`저장 ${formatMenuStatus(menu.status)}`, menu.status),
+        createStatusBadge(`실판매 ${formatMenuStatus(menu.effectiveStatus)}`, menu.effectiveStatus)
+      );
+
+      const desc = document.createElement("p");
+      desc.className = "menu-card-desc";
+      desc.textContent = menu.description || "설명이 없습니다.";
+
+      const actions = document.createElement("div");
+      actions.className = "menu-card-actions";
+      const toggleButton = document.createElement("button");
+      toggleButton.type = "button";
+      toggleButton.className = "secondary";
+      toggleButton.textContent = normalizeEnum(menu.status) === "ON_SALE" ? "판매 OFF" : "판매 ON";
+      toggleButton.addEventListener("click", () => submitMenuStatus(menu.id, normalizeEnum(menu.status) !== "ON_SALE"));
+      actions.append(toggleButton);
+
+      container.append(title, meta, badges, desc, actions);
+
+      if ((menu.components ?? []).length > 0) {
+        const heading = document.createElement("div");
+        heading.className = "hint";
+        heading.textContent = "세트 구성품";
+        container.appendChild(heading);
+
+        const componentBox = document.createElement("div");
+        componentBox.className = "menu-detail-components";
+        menu.components.forEach(component => {
+          const item = document.createElement("div");
+          item.className = "menu-component-item";
+          const main = document.createElement("div");
+          main.className = "menu-item-main";
+          const name = document.createElement("div");
+          name.className = "menu-item-title";
+          name.textContent = `${component.name || component.menuId} x ${component.quantity}`;
+          const info = document.createElement("div");
+          info.className = "menu-badges";
+          info.append(
+            createStatusBadge(`저장 ${formatMenuStatus(component.status)}`, component.status),
+            createStatusBadge(`실판매 ${formatMenuStatus(component.effectiveStatus)}`, component.effectiveStatus)
+          );
+          main.append(name, info);
+          item.appendChild(main);
+          componentBox.appendChild(item);
+        });
+        container.appendChild(componentBox);
+      }
+    }
+
+    function clearMenuDetail() {
+      const container = document.getElementById("menu-detail-display");
+      container.innerHTML = `<div class="menu-empty">상세 조회 결과가 없습니다.</div>`;
+    }
+
+    function populateMenuUpdateForm(menu) {
+      const updateForm = document.getElementById("menu-update-form");
+      const getForm = document.getElementById("menu-get-form");
+      const statusForm = document.getElementById("menu-status-form");
+      updateForm.menuId.value = menu.id || "";
+      updateForm.name.value = menu.name || "";
+      updateForm.description.value = menu.description || "";
+      updateForm.priceKrw.value = menu.priceKrw ?? "";
+      updateForm.resolvedType.value = normalizeEnum(menu.type);
+      updateForm.resolvedTypeLabel.value = formatMenuType(menu.type);
+      updateForm.imageFile.value = "";
+      updateForm.replaceComponents.checked = false;
+      setMenuComponents("update", normalizeEnum(menu.type) === "SET" ? (menu.components ?? []) : []);
+      syncUpdateComponentsBuilder();
+
+      getForm.menuId.value = menu.id || "";
+      statusForm.menuId.value = menu.id || "";
+    }
+
+    function syncCreateComponentsBuilder() {
+      const visible = document.querySelector("#menu-create-form [name='type']").value === "SET";
+      document.getElementById("create-components-builder").hidden = !visible;
+      if (!visible) {
+        menuComponentState.create.lastResults = null;
+        setMenuComponents("create", []);
+      }
+    }
+
+    function syncUpdateComponentsBuilder() {
+      const form = document.getElementById("menu-update-form");
+      const isSet = normalizeEnum(form.resolvedType.value) === "SET";
+      document.getElementById("update-components-builder").hidden = !(isSet && form.replaceComponents.checked);
+    }
+
+    function setMenuComponents(builderKey, components) {
+      menuComponentState[builderKey].selected = (components ?? []).map(component => ({
+        menuId: component.menuId ?? component.id,
+        name: component.name || "",
+        status: normalizeEnum(component.status),
+        effectiveStatus: normalizeEnum(component.effectiveStatus),
+        priceKrw: component.priceKrw,
+        quantity: Number(component.quantity ?? 1),
+      }));
+      renderMenuComponentState(builderKey);
+    }
+
+    function addMenuComponent(builderKey, menu) {
+      const exists = menuComponentState[builderKey].selected.some(component => component.menuId === menu.id);
+      if (exists) {
+        appendLog("이미 선택된 단품입니다.", { builderKey, menuId: menu.id });
+        return;
+      }
+      menuComponentState[builderKey].selected.push({
+        menuId: menu.id,
+        name: menu.name || "",
+        status: normalizeEnum(menu.status),
+        effectiveStatus: normalizeEnum(menu.effectiveStatus),
+        priceKrw: menu.priceKrw,
+        quantity: 1,
+      });
+      renderMenuComponentState(builderKey);
+    }
+
+    function removeMenuComponent(builderKey, menuId) {
+      menuComponentState[builderKey].selected = menuComponentState[builderKey].selected
+        .filter(component => component.menuId !== menuId);
+      renderMenuComponentState(builderKey);
+    }
+
+    function renderMenuComponentState(builderKey) {
+      const stateForBuilder = menuComponentState[builderKey];
+      const resultBox = document.getElementById(`${builderKey}-component-results`);
+      const selectedBox = document.getElementById(`${builderKey}-component-selected`);
+
+      resultBox.innerHTML = "";
+      if (stateForBuilder.lastResults === null) {
+        resultBox.innerHTML = `<div class="menu-empty">검색 버튼을 눌러 단품 메뉴를 불러오세요.</div>`;
+      } else if (stateForBuilder.lastResults.length === 0) {
+        resultBox.innerHTML = `<div class="menu-empty">검색 결과가 없습니다.</div>`;
+      } else {
+        stateForBuilder.lastResults.forEach(menu => {
+          const item = document.createElement("div");
+          item.className = "menu-search-item";
+
+          const main = document.createElement("div");
+          main.className = "menu-item-main";
+          const title = document.createElement("div");
+          title.className = "menu-item-title";
+          title.textContent = `${menu.name || "(이름 없음)"} · ${formatCurrency(menu.priceKrw)}`;
+          const badges = document.createElement("div");
+          badges.className = "menu-badges";
+          badges.append(
+            createStatusBadge(`저장 ${formatMenuStatus(menu.status)}`, menu.status),
+            createStatusBadge(`실판매 ${formatMenuStatus(menu.effectiveStatus)}`, menu.effectiveStatus)
+          );
+          main.append(title, badges);
+
+          const addButton = document.createElement("button");
+          addButton.type = "button";
+          addButton.className = "secondary";
+          addButton.textContent = stateForBuilder.selected.some(component => component.menuId === menu.id) ? "선택됨" : "추가";
+          addButton.disabled = stateForBuilder.selected.some(component => component.menuId === menu.id);
+          addButton.addEventListener("click", () => addMenuComponent(builderKey, menu));
+
+          item.append(main, addButton);
+          resultBox.appendChild(item);
+        });
+      }
+
+      selectedBox.innerHTML = "";
+      if (stateForBuilder.selected.length === 0) {
+        selectedBox.innerHTML = `<div class="menu-empty">선택된 구성품이 없습니다.</div>`;
+        return;
+      }
+
+      stateForBuilder.selected.forEach(component => {
+        const item = document.createElement("div");
+        item.className = "menu-component-item";
+
+        const main = document.createElement("div");
+        main.className = "menu-item-main";
+        const title = document.createElement("div");
+        title.className = "menu-item-title";
+        title.textContent = component.name || component.menuId;
+        const badges = document.createElement("div");
+        badges.className = "menu-badges";
+        badges.append(
+          createStatusBadge(`저장 ${formatMenuStatus(component.status)}`, component.status),
+          createStatusBadge(`실판매 ${formatMenuStatus(component.effectiveStatus)}`, component.effectiveStatus)
+        );
+        main.append(title, badges);
+
+        const controls = document.createElement("div");
+        controls.className = "menu-card-actions";
+        const qtyInput = document.createElement("input");
+        qtyInput.type = "number";
+        qtyInput.min = "1";
+        qtyInput.value = String(component.quantity);
+        qtyInput.className = "menu-qty-input";
+        qtyInput.addEventListener("input", () => {
+          component.quantity = Number(qtyInput.value) || 1;
+        });
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "secondary";
+        removeButton.textContent = "삭제";
+        removeButton.addEventListener("click", () => removeMenuComponent(builderKey, component.menuId));
+
+        controls.append(qtyInput, removeButton);
+        item.append(main, controls);
+        selectedBox.appendChild(item);
+      });
+    }
+
+    function collectMenuComponents(builderKey) {
+      const selected = menuComponentState[builderKey].selected.map(component => ({
+        menuId: component.menuId,
+        quantity: Number(component.quantity),
+      }));
+      if (selected.length === 0) {
+        throw new Error("세트 메뉴는 최소 1개의 단품을 포함해야 합니다.");
+      }
+      selected.forEach(component => {
+        if (!component.menuId || !Number.isInteger(component.quantity) || component.quantity < 1) {
+          throw new Error("구성 단품 수량은 1 이상의 정수여야 합니다.");
+        }
+      });
+      return selected;
     }
 
     async function loadMenuImageForCard(menuId, imageBox) {
@@ -1106,68 +1790,40 @@ async function loadStoreImage() {
       return new Intl.NumberFormat("ko-KR").format(value) + "원";
     }
 
-    async function handleMenuImageUpload() {
-      const menuId = document.getElementById("menu-upload-id").value.trim();
-      const fileInput = document.getElementById("menu-upload-file");
-      const file = fileInput.files[0];
-      if (!menuId || !file) {
-        appendLog("메뉴 ID와 이미지를 모두 선택하세요.");
-        return;
+    function normalizeEnum(value) {
+      return typeof value === "string" ? value.trim().toUpperCase() : "";
+    }
+
+    function formatMenuType(value) {
+      const normalized = normalizeEnum(value);
+      if (normalized === "SET") return "세트";
+      if (normalized === "SINGLE") return "단품";
+      return normalized || "-";
+    }
+
+    function formatMenuStatus(value) {
+      const normalized = normalizeEnum(value);
+      if (normalized === "ON_SALE") return "판매중";
+      if (normalized === "SOLD_OUT") return "품절";
+      return normalized || "-";
+    }
+
+    function createBadge(text, variant = "") {
+      const badge = document.createElement("span");
+      badge.className = `menu-badge ${variant}`.trim();
+      badge.textContent = text;
+      return badge;
+    }
+
+    function createStatusBadge(text, value) {
+      const normalized = normalizeEnum(value);
+      if (normalized === "ON_SALE") {
+        return createBadge(text, "ok");
       }
-      try {
-        appendLog("메뉴 이미지 Presign 요청", { menuId, fileName: file.name });
-        const presignRes = await fetch(`${state.baseUrl}/api/v1/menus/${menuId}/uploads/presign`, {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            fileName: file.name,
-            contentType: file.type || "application/octet-stream",
-          }),
-        });
-        const presignBody = await presignRes.json();
-        appendLog("메뉴 이미지 Presign 응답", presignBody);
-        if (!presignBody.success) throw new Error("Presign 실패");
-        const { url, key } = presignBody.data;
-
-        appendLog("메뉴 이미지 S3 업로드");
-        const putRes = await fetch(url, {
-          method: "PUT",
-          headers: { "Content-Type": file.type || "application/octet-stream" },
-          body: file,
-        });
-        if (!putRes.ok) {
-          throw new Error(`S3 업로드 실패: ${putRes.status}`);
-        }
-        let etag = putRes.headers.get("ETag") || putRes.headers.get("etag");
-        if (!etag) throw new Error("ETag 헤더가 없습니다.");
-        etag = etag.replace(/"/g, "");
-
-        appendLog("메뉴 이미지 Confirm 호출", { key, etag });
-        const confirmRes = await fetch(`${state.baseUrl}/api/v1/menus/${menuId}/uploads/confirm`, {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify({ key, etag }),
-        });
-        const confirmBody = await confirmRes.json();
-        appendLog("메뉴 이미지 Confirm 응답", confirmBody);
-        if (!confirmBody.success) throw new Error("Confirm 실패");
-
-        const metadata = confirmBody.data;
-        appendLog("메뉴 이미지 정보 PATCH", metadata);
-        const patchRes = await fetch(`${state.baseUrl}/owner/menus/${menuId}`, {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            imageKey: metadata.key,
-            imageMime: metadata.contentType,
-            imageEtag: metadata.etag
-          }),
-        });
-        const patchBody = await patchRes.json();
-        appendLog("메뉴 이미지 정보 PATCH 응답", patchBody);
-      } catch (err) {
-        appendLog("메뉴 이미지 업로드 실패", { error: err.message });
+      if (normalized === "SOLD_OUT") {
+        return createBadge(text, "warn");
       }
+      return createBadge(text);
     }
 
     function switchTab(targetId) {

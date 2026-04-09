@@ -3,7 +3,7 @@ package com.mvp.v1.dandionna.config.Security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +31,7 @@ class RateLimitFilterTest {
 	void setUp() {
 		RateLimitProperties props = new RateLimitProperties(5, 100, 3);
 		filter = new RateLimitFilter(redisTemplate, props);
-		when(redisTemplate.opsForValue()).thenReturn(valueOps);
+		lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
 	}
 
 	@Test
