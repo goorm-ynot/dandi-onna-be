@@ -768,7 +768,6 @@
     if (consumerBaseInput) {
       consumerBaseInput.value = state.baseUrl;
     }
-    const menuImageCache = new Map();
     const menuComponentState = {
       create: { selected: [], lastResults: null },
       update: { selected: [], lastResults: null },
@@ -1152,7 +1151,7 @@ async function loadStoreImage() {
         throw new Error("메뉴 이미지 Presign 실패");
       }
 
-      const { url, uploadToken, tempKey } = presignBody.data;
+      const { url, uploadToken } = presignBody.data;
       const putRes = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": file.type || "application/octet-stream" },
@@ -1163,7 +1162,7 @@ async function loadStoreImage() {
       }
 
       const etag = extractEtag(putRes);
-      appendLog("메뉴 이미지 임시 Confirm 요청", { uploadToken, tempKey, etag });
+      appendLog("메뉴 이미지 임시 Confirm 요청", { uploadToken, etag });
       const confirmRes = await fetch(`${state.baseUrl}/api/v1/owner/menu-images/temp/confirm`, {
         method: "POST",
         headers: authHeaders(),
@@ -1171,10 +1170,10 @@ async function loadStoreImage() {
       });
       const confirmBody = await confirmRes.json();
       appendLog("메뉴 이미지 임시 Confirm 응답", confirmBody);
-      if (!confirmBody?.success || !confirmBody?.data?.uploadToken) {
+      if (!confirmBody?.success || confirmBody?.data?.confirmed !== true) {
         throw new Error("메뉴 이미지 Confirm 실패");
       }
-      return confirmBody.data.uploadToken;
+      return uploadToken;
     }
 
     async function handleMenuCreate(event) {
@@ -1205,7 +1204,6 @@ async function loadStoreImage() {
         setMenuResult(body);
         renderMenuDetail(body);
         if (body?.success && body?.data) {
-          menuImageCache.delete(body.data.id);
           populateMenuUpdateForm(body.data);
           form.reset();
           form.type.value = "SINGLE";
@@ -1254,7 +1252,6 @@ async function loadStoreImage() {
         setMenuResult(body);
         renderMenuDetail(body);
         if (body?.success && body?.data) {
-          menuImageCache.delete(body.data.id);
           populateMenuUpdateForm(body.data);
           await reloadLastMenuList();
         }
@@ -1301,7 +1298,6 @@ async function loadStoreImage() {
         const body = await res.json();
         setMenuResult(body);
         if (body?.success) {
-          menuImageCache.delete(menuId);
           clearMenuDetail();
           await reloadLastMenuList();
         }
@@ -1438,14 +1434,9 @@ async function loadStoreImage() {
 
       const imageBox = document.createElement("div");
       imageBox.className = "menu-card-image";
-      imageBox.textContent = menu.imageKey ? "이미지를 불러오는 중..." : "이미지 없음";
+      imageBox.textContent = menu.imageUrl ? "이미지를 불러오는 중..." : "이미지 없음";
       card.appendChild(imageBox);
-      if (menu.imageKey) {
-        loadMenuImageForCard(menu.id, imageBox);
-      } else {
-        imageBox.classList.add("empty");
-        menuImageCache.delete(menu.id);
-      }
+      setMenuImageBox(imageBox, menu.imageUrl || null);
 
       const title = document.createElement("div");
       title.className = "menu-card-title";
@@ -1522,7 +1513,8 @@ async function loadStoreImage() {
       badges.append(
         createBadge(`유형 ${formatMenuType(menu.type)}`),
         createStatusBadge(`저장 ${formatMenuStatus(menu.status)}`, menu.status),
-        createStatusBadge(`실판매 ${formatMenuStatus(menu.effectiveStatus)}`, menu.effectiveStatus)
+        createStatusBadge(`실판매 ${formatMenuStatus(menu.effectiveStatus)}`, menu.effectiveStatus),
+        createBadge(`이미지 ${normalizeEnum(menu.imageStatus) || "PENDING"}`)
       );
 
       const desc = document.createElement("p");
@@ -1538,7 +1530,11 @@ async function loadStoreImage() {
       toggleButton.addEventListener("click", () => submitMenuStatus(menu.id, normalizeEnum(menu.status) !== "ON_SALE"));
       actions.append(toggleButton);
 
-      container.append(title, meta, badges, desc, actions);
+      const imageBox = document.createElement("div");
+      imageBox.className = "menu-card-image";
+      setMenuImageBox(imageBox, menu.imageUrl || null);
+
+      container.append(imageBox, title, meta, badges, desc, actions);
 
       if ((menu.components ?? []).length > 0) {
         const heading = document.createElement("div");
@@ -1743,30 +1739,6 @@ async function loadStoreImage() {
         }
       });
       return selected;
-    }
-
-    async function loadMenuImageForCard(menuId, imageBox) {
-      if (!menuId || !imageBox) return;
-      if (menuImageCache.has(menuId)) {
-        setMenuImageBox(imageBox, menuImageCache.get(menuId));
-        return;
-      }
-      try {
-        const res = await fetch(`${state.baseUrl}/api/v1/menus/${menuId}/uploads/view`, {
-          method: "GET",
-          headers: authHeaders(),
-        });
-        const body = await res.json();
-        if (body?.success && body?.data?.url) {
-          menuImageCache.set(menuId, body.data.url);
-          setMenuImageBox(imageBox, body.data.url);
-        } else {
-          setMenuImageBox(imageBox, null);
-        }
-      } catch (err) {
-        imageBox.textContent = "이미지 로딩 실패";
-        imageBox.classList.add("empty");
-      }
     }
 
     function setMenuImageBox(box, url) {

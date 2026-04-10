@@ -13,6 +13,8 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -38,8 +40,10 @@ import com.mvp.v1.dandionna.menu.repository.MenuSetItemRepository;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPost;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPostStatus;
 import com.mvp.v1.dandionna.noshow_post.repository.NoShowPostRepository;
+import com.mvp.v1.dandionna.s3.dto.PresignedUrlResponse;
 import com.mvp.v1.dandionna.s3.dto.S3Metadata;
 import com.mvp.v1.dandionna.s3.service.MenuImageTempUploadService;
+import com.mvp.v1.dandionna.s3.service.UploadService;
 import com.mvp.v1.dandionna.store.entity.ImageStatus;
 import com.mvp.v1.dandionna.store.entity.Store;
 import com.mvp.v1.dandionna.store.repository.StoreRepository;
@@ -50,11 +54,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MenuService {
 
+	private static final Logger log = LoggerFactory.getLogger(MenuService.class);
+
 	private final MenuRepository menuRepository;
 	private final MenuSetItemRepository menuSetItemRepository;
 	private final StoreRepository storeRepository;
 	private final NoShowPostRepository noShowPostRepository;
 	private final MenuImageTempUploadService menuImageTempUploadService;
+	private final UploadService uploadService;
 
 	@Transactional
 	public MenuDetailResponse create(UUID ownerId, MenuCreateRequest request) {
@@ -311,15 +318,15 @@ public class MenuService {
 	}
 
 	private MenuSummaryResponse toSummary(Menu menu, MenuViewContext context) {
+		MenuImageView imageView = resolveMenuImageView(menu);
 		return new MenuSummaryResponse(
 			menu.getId(),
 			menu.getName(),
 			menu.getDescription(),
 			menu.getPriceKrw(),
-			menu.getImageKey(),
-			menu.getImageMime(),
-			menu.getImageEtag(),
 			menu.getImageStatus(),
+			imageView.imageUrl(),
+			imageView.imageUrlExpiresInSeconds(),
 			menu.getType(),
 			menu.getStatus(),
 			context.effectiveStatuses().getOrDefault(menu.getId(), MenuStatus.sold_out),
@@ -328,6 +335,7 @@ public class MenuService {
 	}
 
 	private MenuDetailResponse toDetail(Menu menu, MenuViewContext context) {
+		MenuImageView imageView = resolveMenuImageView(menu);
 		List<MenuDetailResponse.Component> components = context.setItemsBySetId().getOrDefault(menu.getId(), List.of()).stream()
 			.map(item -> {
 				Menu componentMenu = context.componentMenusById().get(item.getComponentMenuId());
@@ -347,15 +355,28 @@ public class MenuService {
 			menu.getName(),
 			menu.getDescription(),
 			menu.getPriceKrw(),
-			menu.getImageKey(),
-			menu.getImageMime(),
-			menu.getImageEtag(),
 			menu.getImageStatus(),
+			imageView.imageUrl(),
+			imageView.imageUrlExpiresInSeconds(),
 			menu.getType(),
 			menu.getStatus(),
 			context.effectiveStatuses().getOrDefault(menu.getId(), MenuStatus.sold_out),
 			components
 		);
+	}
+
+	private MenuImageView resolveMenuImageView(Menu menu) {
+		if (!StringUtils.hasText(menu.getImageKey())) {
+			return MenuImageView.empty();
+		}
+
+		try {
+			PresignedUrlResponse response = uploadService.presignDownload(menu.getImageKey());
+			return new MenuImageView(response.url(), response.expiresInSeconds());
+		} catch (RuntimeException ex) {
+			log.warn("메뉴 이미지 URL 생성 실패: menuId={}, storeId={}, imageKey={}", menu.getId(), menu.getStoreId(), menu.getImageKey(), ex);
+			return MenuImageView.empty();
+		}
 	}
 
 	private MenuViewContext buildViewContext(Collection<Menu> menus) {
@@ -449,5 +470,14 @@ public class MenuService {
 		Map<UUID, List<MenuSetItem>> setItemsBySetId,
 		Map<UUID, Menu> componentMenusById
 	) {
+	}
+
+	private record MenuImageView(
+		String imageUrl,
+		Long imageUrlExpiresInSeconds
+	) {
+		private static MenuImageView empty() {
+			return new MenuImageView(null, null);
+		}
 	}
 }

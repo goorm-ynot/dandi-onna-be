@@ -71,7 +71,8 @@ class MenuImageTempUploadServiceTest {
 		MenuImageTempPresignResponse response = service.presign(ownerId, request);
 
 		assertThat(response.uploadToken()).isNotBlank();
-		assertThat(response.tempKey()).isEqualTo("temp/menu-images/owner/key.png");
+		assertThat(response.url()).isEqualTo("https://upload.example");
+		assertThat(response.expiresInSeconds()).isEqualTo(300);
 		verify(redisTemplate).expire(eq("menu:image:temp:" + response.uploadToken()), eq(Duration.ofSeconds(1800)));
 
 		ArgumentCaptor<Map<String, String>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
@@ -100,7 +101,6 @@ class MenuImageTempUploadServiceTest {
 		MenuImageTempConfirmResponse response = service.confirm(ownerId, new MenuImageTempConfirmRequest(uploadToken, "etag-1"));
 
 		assertThat(response.confirmed()).isTrue();
-		assertThat(response.uploadToken()).isEqualTo(uploadToken);
 		verify(hashOperations).putAll(eq("menu:image:temp:" + uploadToken), anyMap());
 	}
 

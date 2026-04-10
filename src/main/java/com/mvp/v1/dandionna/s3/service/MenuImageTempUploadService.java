@@ -73,7 +73,6 @@ public class MenuImageTempUploadService {
 		return new MenuImageTempPresignResponse(
 			uploadToken,
 			presigned.url(),
-			presigned.key(),
 			presigned.expiresInSeconds()
 		);
 	}
@@ -87,14 +86,7 @@ public class MenuImageTempUploadService {
 			throw new BusinessException(ErrorCode.MENU_IMAGE_UPLOAD_IN_USE, "이미 사용 중인 이미지 업로드 토큰입니다.");
 		}
 		if (metadata.status() == TempUploadStatus.CONFIRMED) {
-			String confirmedEtag = StringUtils.hasText(metadata.etag()) ? metadata.etag() : request.etag();
-			return new MenuImageTempConfirmResponse(
-				request.uploadToken(),
-				metadata.tempKey(),
-				metadata.contentType(),
-				confirmedEtag,
-				true
-			);
+			return new MenuImageTempConfirmResponse(true);
 		}
 
 		S3Metadata objectMetadata = uploadService.head(metadata.tempKey());
@@ -109,13 +101,7 @@ public class MenuImageTempUploadService {
 		updates.put(FIELD_CONFIRMED_AT, String.valueOf(Instant.now().getEpochSecond()));
 		redisTemplate.opsForHash().putAll(redisKey(request.uploadToken()), updates);
 
-		return new MenuImageTempConfirmResponse(
-			request.uploadToken(),
-			metadata.tempKey(),
-			objectMetadata.getContentType(),
-			objectMetadata.getEtag(),
-			true
-		);
+		return new MenuImageTempConfirmResponse(true);
 	}
 
 	public S3Metadata consumeForMenu(UUID ownerId, String uploadToken, UUID menuId) {

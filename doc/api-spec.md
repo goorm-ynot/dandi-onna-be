@@ -18,7 +18,7 @@
 - `GET /api/v1/owner/menus/{menuId}`
 - `GET /api/v1/owner/menus?page&size&keyword&type&effectiveStatus`
 - 업로드: `POST /api/v1/stores/uploads/presign|confirm`, `GET /api/v1/stores/uploads/view`
-- 메뉴 이미지 임시 업로드: `POST /api/v1/owner/menu-images/temp/presign|confirm`, `GET /api/v1/menus/{id}/uploads/view`
+- 메뉴 이미지 임시 업로드: `POST /api/v1/owner/menu-images/temp/presign|confirm`
 
 ### 메뉴 관리 상세
 - 모든 메뉴 API는 `OWNER` 권한과 Bearer 인증이 필요합니다.
@@ -33,7 +33,7 @@
 - 요청 필드
   - `fileName`, `contentType`
 - 응답 필드
-  - `uploadToken`, `url`, `tempKey`, `expiresInSeconds`
+  - `uploadToken`, `url`, `expiresInSeconds`
 - 처리 순서
   - presign 발급
   - 반환된 `url` 로 파일 PUT
@@ -51,7 +51,6 @@
 {
   "uploadToken": "UUID",
   "url": "https://object-storage.example/presigned-put-url",
-  "tempKey": "temp/menu-images/owner-id/random.png",
   "expiresInSeconds": 300
 }
 ```
@@ -60,7 +59,7 @@
 - `POST /api/v1/owner/menu-images/temp/confirm`
 - 요청 바디: `{ "uploadToken": "UUID", "etag": "etag-value" }`
 - 응답 필드
-  - `uploadToken`, `tempKey`, `contentType`, `etag`, `confirmed`
+  - `confirmed`
 
 #### 1) 메뉴 생성
 - `POST /api/v1/owner/menus`
@@ -73,7 +72,7 @@
   - 선택 이미지 토큰: `imageUploadToken`
 - 응답 필드
   - `id`, `name`, `description`, `priceKrw`
-  - `imageKey`, `imageMime`, `imageEtag`, `imageStatus`
+  - `imageStatus`, `imageUrl`, `imageUrlExpiresInSeconds`
   - `type`, `status`, `effectiveStatus`
   - `components[]`
 
@@ -105,6 +104,7 @@
   - `description` 이 미전송, `null`, 공백 문자열이면 기존 설명을 유지합니다.
   - `imageUploadToken` 이 없으면 기존 이미지 메타를 유지합니다.
   - 이미지 삭제 전용 기능은 현재 제공하지 않습니다.
+  - 생성/수정 응답도 상세 DTO를 사용하므로 `imageUrl`, `imageUrlExpiresInSeconds` 가 함께 내려갑니다.
 
 #### 3) 메뉴 상태 전용 변경
 - `POST /api/v1/owner/menus/{menuId}/status`
@@ -124,13 +124,16 @@
   - `effectiveStatus`: `ON_SALE`, `SOLD_OUT`
 - 목록 응답 항목
   - `id`, `name`, `description`, `priceKrw`
-  - `imageKey`, `imageMime`, `imageEtag`, `imageStatus`
+  - `imageStatus`, `imageUrl`, `imageUrlExpiresInSeconds`
   - `type`, `status`, `effectiveStatus`
   - `componentCount`
+- 메뉴 이미지 URL 생성에 실패하면 조회 전체가 실패하지 않고 해당 메뉴의 `imageUrl`, `imageUrlExpiresInSeconds` 만 `null` 로 내려갑니다.
+- 메뉴 목록/상세 조회는 presigned 이미지 URL 생성 비용 때문에 owner 기준 `30회/분` 별도 rate limit 이 적용됩니다.
 
 #### 5) 제품 상세 조회
 - `GET /api/v1/owner/menus/{menuId}`
 - 기존 owner 메뉴 상세 API를 제품 상세 조회 API로 사용합니다.
+- 응답에는 `imageStatus`, `imageUrl`, `imageUrlExpiresInSeconds` 가 포함되며, 프론트는 `imageUrl` 을 바로 사용하면 됩니다.
 - 단품은 top-level `description` 에 해당 단품 설명이 내려가고 `components` 는 빈 배열입니다.
 - 세트는 top-level `description` 에 해당 세트 설명이 내려가고, `components[{ menuId, name, status, effectiveStatus, quantity }]` 는 현재 구조를 유지합니다.
 

@@ -44,8 +44,10 @@ import com.mvp.v1.dandionna.menu.repository.MenuSetItemRepository;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPost;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPostStatus;
 import com.mvp.v1.dandionna.noshow_post.repository.NoShowPostRepository;
+import com.mvp.v1.dandionna.s3.dto.PresignedUrlResponse;
 import com.mvp.v1.dandionna.s3.dto.S3Metadata;
 import com.mvp.v1.dandionna.s3.service.MenuImageTempUploadService;
+import com.mvp.v1.dandionna.s3.service.UploadService;
 import com.mvp.v1.dandionna.store.entity.ImageStatus;
 import com.mvp.v1.dandionna.store.entity.Store;
 import com.mvp.v1.dandionna.store.repository.StoreRepository;
@@ -65,6 +67,8 @@ class MenuServiceTest {
 	private NoShowPostRepository noShowPostRepository;
 	@Mock
 	private MenuImageTempUploadService menuImageTempUploadService;
+	@Mock
+	private UploadService uploadService;
 
 	@InjectMocks
 	private MenuService menuService;
@@ -410,6 +414,8 @@ class MenuServiceTest {
 		});
 		when(menuImageTempUploadService.consumeForMenu(ownerId, "upload-token", savedMenuId))
 			.thenReturn(new S3Metadata("menus/" + savedMenuId + "/image.png", "etag-1", "image/png"));
+		when(uploadService.presignDownload("menus/" + savedMenuId + "/image.png"))
+			.thenReturn(new PresignedUrlResponse("https://example.com/menu-" + savedMenuId, "menus/" + savedMenuId + "/image.png", 300));
 
 		MenuCreateRequest request = new MenuCreateRequest(
 			"아메리카노",
@@ -422,10 +428,9 @@ class MenuServiceTest {
 
 		MenuDetailResponse response = menuService.create(ownerId, request);
 
-		assertThat(response.imageKey()).isEqualTo("menus/" + savedMenuId + "/image.png");
-		assertThat(response.imageMime()).isEqualTo("image/png");
-		assertThat(response.imageEtag()).isEqualTo("etag-1");
 		assertThat(response.imageStatus()).isEqualTo(ImageStatus.uploaded);
+		assertThat(response.imageUrl()).isEqualTo("https://example.com/menu-" + savedMenuId);
+		assertThat(response.imageUrlExpiresInSeconds()).isEqualTo(300L);
 		verify(menuImageTempUploadService).consumeForMenu(ownerId, "upload-token", savedMenuId);
 	}
 
@@ -440,6 +445,8 @@ class MenuServiceTest {
 
 		when(storeRepository.findByOwnerUserId(ownerId)).thenReturn(Optional.of(store));
 		when(menuRepository.findByIdAndStoreId(menuId, storeId)).thenReturn(Optional.of(menu));
+		when(uploadService.presignDownload("menus/original.png"))
+			.thenReturn(new PresignedUrlResponse("https://example.com/original", "menus/original.png", 300));
 
 		MenuUpdateRequest request = new MenuUpdateRequest(
 			"수정된 단품",
@@ -452,9 +459,8 @@ class MenuServiceTest {
 
 		MenuDetailResponse response = menuService.update(ownerId, menuId, request);
 
-		assertThat(response.imageKey()).isEqualTo("menus/original.png");
-		assertThat(response.imageMime()).isEqualTo("image/png");
-		assertThat(response.imageEtag()).isEqualTo("etag-old");
+		assertThat(response.imageUrl()).isEqualTo("https://example.com/original");
+		assertThat(response.imageUrlExpiresInSeconds()).isEqualTo(300L);
 		verify(menuImageTempUploadService, never()).consumeForMenu(any(), any(), any());
 	}
 
@@ -471,6 +477,8 @@ class MenuServiceTest {
 		when(menuRepository.findByIdAndStoreId(menuId, storeId)).thenReturn(Optional.of(menu));
 		when(menuImageTempUploadService.consumeForMenu(ownerId, "new-upload-token", menuId))
 			.thenReturn(new S3Metadata("menus/" + menuId + "/new.png", "etag-new", "image/jpeg"));
+		when(uploadService.presignDownload("menus/" + menuId + "/new.png"))
+			.thenReturn(new PresignedUrlResponse("https://example.com/new-" + menuId, "menus/" + menuId + "/new.png", 300));
 
 		MenuUpdateRequest request = new MenuUpdateRequest(
 			null,
@@ -483,11 +491,51 @@ class MenuServiceTest {
 
 		MenuDetailResponse response = menuService.update(ownerId, menuId, request);
 
-		assertThat(response.imageKey()).isEqualTo("menus/" + menuId + "/new.png");
-		assertThat(response.imageMime()).isEqualTo("image/jpeg");
-		assertThat(response.imageEtag()).isEqualTo("etag-new");
 		assertThat(response.imageStatus()).isEqualTo(ImageStatus.uploaded);
+		assertThat(response.imageUrl()).isEqualTo("https://example.com/new-" + menuId);
+		assertThat(response.imageUrlExpiresInSeconds()).isEqualTo(300L);
 		verify(menuImageTempUploadService).consumeForMenu(ownerId, "new-upload-token", menuId);
+	}
+
+	@Test
+	void list_uploadedImage_includesPresignedImageUrl() {
+		UUID ownerId = UUID.randomUUID();
+		UUID storeId = UUID.randomUUID();
+		UUID menuId = UUID.randomUUID();
+		Store store = createStore(storeId, ownerId);
+		Menu menu = createMenu(menuId, storeId, "단품", 7000, MenuType.single, MenuStatus.on_sale);
+		menu.updateImage("menus/list.png", "image/png", "etag-list", ImageStatus.uploaded);
+
+		when(storeRepository.findByOwnerUserId(ownerId)).thenReturn(Optional.of(store));
+		when(menuRepository.search(storeId, null, null)).thenReturn(List.of(menu));
+		when(uploadService.presignDownload("menus/list.png"))
+			.thenReturn(new PresignedUrlResponse("https://example.com/list", "menus/list.png", 300));
+
+		Page<MenuSummaryResponse> response = menuService.list(ownerId, 0, 10, null, null, null);
+
+		assertThat(response.getContent()).hasSize(1);
+		assertThat(response.getContent().get(0).imageUrl()).isEqualTo("https://example.com/list");
+		assertThat(response.getContent().get(0).imageUrlExpiresInSeconds()).isEqualTo(300L);
+	}
+
+	@Test
+	void get_imageUrlGenerationFails_returnsDetailWithNullImageUrl() {
+		UUID ownerId = UUID.randomUUID();
+		UUID storeId = UUID.randomUUID();
+		UUID menuId = UUID.randomUUID();
+		Store store = createStore(storeId, ownerId);
+		Menu menu = createMenu(menuId, storeId, "단품", 7000, MenuType.single, MenuStatus.on_sale);
+		menu.updateImage("menus/fail.png", "image/png", "etag-fail", ImageStatus.uploaded);
+
+		when(storeRepository.findByOwnerUserId(ownerId)).thenReturn(Optional.of(store));
+		when(menuRepository.findByIdAndStoreId(menuId, storeId)).thenReturn(Optional.of(menu));
+		when(uploadService.presignDownload("menus/fail.png")).thenThrow(new RuntimeException("presign failed"));
+
+		MenuDetailResponse response = menuService.get(ownerId, menuId);
+
+		assertThat(response.imageStatus()).isEqualTo(ImageStatus.uploaded);
+		assertThat(response.imageUrl()).isNull();
+		assertThat(response.imageUrlExpiresInSeconds()).isNull();
 	}
 
 	private Store createStore(UUID storeId, UUID ownerId) {
