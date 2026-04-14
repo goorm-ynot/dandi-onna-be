@@ -13,6 +13,7 @@
 - [doc/architecture.md](doc/architecture.md) - 아키텍처와 Mermaid 다이어그램
 - [doc/operations.md](doc/operations.md) - Ubuntu 단일 서버 운영/배포 가이드
 - [doc/performance-measurement-plan.md](doc/performance-measurement-plan.md) - k6 기반 성능 측정 체계, 데이터셋 전략, 결과 템플릿
+- [doc/performance-results-2026-04-15.md](doc/performance-results-2026-04-15.md) - 당시 baseline 수치와 Grafana 관찰 결과 요약
 - [doc/exception-policy.md](doc/exception-policy.md) - 예외 정책
 - [doc/tech-stack.md](doc/tech-stack.md) - 사용 기술 목록
 - [doc/refactoring-roadmap.md](doc/refactoring-roadmap.md) - 향후 리팩터링 아이디어
