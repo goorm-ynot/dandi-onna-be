@@ -3,6 +3,7 @@ package com.mvp.v1.dandionna.config.Security;
 import java.util.List;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.StringUtils;
 
 /**
  * CORS 허용 목록을 외부 설정에서 주입받는 프로퍼티 클래스.
@@ -36,6 +37,9 @@ public record CorsProperties(
 		List.of("Authorization", "Content-Type", "X-Requested-With");
 
 	public CorsProperties {
+		allowedOrigins = sanitize(allowedOrigins);
+		allowedMethods = sanitize(allowedMethods);
+		allowedHeaders = sanitize(allowedHeaders);
 		if (allowedOrigins == null || allowedOrigins.isEmpty()) {
 			allowedOrigins = List.of("http://localhost:3000", "http://localhost:5173");
 		}
@@ -45,5 +49,15 @@ public record CorsProperties(
 		if (allowedHeaders == null || allowedHeaders.isEmpty()) {
 			allowedHeaders = DEFAULT_HEADERS;
 		}
+	}
+
+	private static List<String> sanitize(List<String> values) {
+		if (values == null) {
+			return List.of();
+		}
+		return values.stream()
+			.filter(StringUtils::hasText)
+			.map(String::trim)
+			.toList();
 	}
 }
