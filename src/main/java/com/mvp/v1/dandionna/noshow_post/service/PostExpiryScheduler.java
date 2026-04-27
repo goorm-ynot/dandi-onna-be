@@ -29,7 +29,7 @@ public class PostExpiryScheduler {
 	private final NoShowPostRepository noShowPostRepository;
 	private final Counter postExpiredCounter;
 
-	@Scheduled(fixedRate = 60_000) // 1분마다 실행
+	@Scheduled(fixedRateString = "${app.noshow.post-expiry.poll-interval-ms:60000}")
 	@Transactional
 	public void expirePosts() {
 		List<NoShowPost> expired = noShowPostRepository.findExpiredPosts(

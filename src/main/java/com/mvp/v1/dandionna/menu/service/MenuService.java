@@ -104,6 +104,7 @@ public class MenuService {
 	public Page<MenuSummaryResponse> list(UUID ownerId, int page, int size, String keyword, String typeValue,
 		String effectiveStatusValue) {
 		Store store = getStore(ownerId);
+		String normalizedKeyword = normalizeKeyword(keyword);
 		MenuType type = parseMenuType(typeValue);
 		MenuStatus effectiveStatus = parseMenuStatus(effectiveStatusValue);
 
@@ -111,7 +112,7 @@ public class MenuService {
 		int pageSize = size > 0 ? size : 10;
 		Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
-		List<Menu> menus = menuRepository.search(store.getId(), normalizeKeyword(keyword), type);
+		List<Menu> menus = menuRepository.search(store.getId(), normalizedKeyword, type);
 		MenuViewContext context = buildViewContext(menus);
 
 		List<MenuSummaryResponse> filtered = menus.stream()

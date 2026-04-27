@@ -2,6 +2,7 @@ package com.mvp.v1.dandionna.noshow_post.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -52,6 +53,7 @@ public class NoShowPostService {
 	private final NoShowPostRepository noShowPostRepository;
 	private final NoShowPostHistoryRepository noShowPostHistoryRepository;
 	private final FavoriteNotificationService favoriteNotificationService;
+	private final Clock applicationClock;
 
 	private static final String HISTORY_REASON_REPLACED = "REPLACED";
 
@@ -62,7 +64,10 @@ public class NoShowPostService {
 
 		validateImmediateRequest(request);
 
-		OffsetDateTime startAtUtc = OffsetDateTime.now(NoShowConstants.DB_ZONE).withSecond(0).withNano(0);
+		OffsetDateTime startAtUtc = OffsetDateTime.now(applicationClock)
+			.withOffsetSameInstant(NoShowConstants.DB_ZONE)
+			.withSecond(0)
+			.withNano(0);
 		OffsetDateTime expireAtUtc = normalizeExpireAt(startAtUtc, store.getCloseTime(), request.expireAt());
 		publishListings(store, request.discountPercent(), startAtUtc, expireAtUtc, request.items());
 	}

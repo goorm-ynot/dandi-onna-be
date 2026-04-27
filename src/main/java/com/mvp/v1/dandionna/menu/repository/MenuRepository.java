@@ -16,6 +16,10 @@ public interface MenuRepository extends JpaRepository<Menu, UUID> {
 
 	boolean existsByIdAndStoreId(UUID id, UUID storeId);
 
+	List<Menu> findByStoreIdOrderByCreatedAtDescIdDesc(UUID storeId);
+
+	List<Menu> findByStoreIdAndTypeOrderByCreatedAtDescIdDesc(UUID storeId, MenuType type);
+
 	List<Menu> findByIdIn(Collection<UUID> ids);
 
 	List<Menu> findByStoreIdAndIdIn(UUID storeId, Collection<UUID> ids);
@@ -26,15 +30,40 @@ public interface MenuRepository extends JpaRepository<Menu, UUID> {
 		select m
 		from Menu m
 		where m.storeId = :storeId
-		  and (:keyword is null
-		    or lower(m.name) like lower(concat('%', :keyword, '%'))
+		  and (lower(m.name) like lower(concat('%', :keyword, '%'))
 		    or lower(coalesce(m.description, '')) like lower(concat('%', :keyword, '%')))
-		  and (:type is null or m.type = :type)
 		order by m.createdAt desc, m.id desc
 		""")
-	List<Menu> search(
+	List<Menu> searchByKeyword(
+		@Param("storeId") UUID storeId,
+		@Param("keyword") String keyword
+	);
+
+	@Query("""
+		select m
+		from Menu m
+		where m.storeId = :storeId
+		  and (lower(m.name) like lower(concat('%', :keyword, '%'))
+		    or lower(coalesce(m.description, '')) like lower(concat('%', :keyword, '%')))
+		  and m.type = :type
+		order by m.createdAt desc, m.id desc
+		""")
+	List<Menu> searchByKeywordAndType(
 		@Param("storeId") UUID storeId,
 		@Param("keyword") String keyword,
 		@Param("type") MenuType type
 	);
+
+	default List<Menu> search(UUID storeId, String keyword, MenuType type) {
+		if ((keyword == null || keyword.isBlank()) && type == null) {
+			return findByStoreIdOrderByCreatedAtDescIdDesc(storeId);
+		}
+		if (keyword == null || keyword.isBlank()) {
+			return findByStoreIdAndTypeOrderByCreatedAtDescIdDesc(storeId, type);
+		}
+		if (type == null) {
+			return searchByKeyword(storeId, keyword);
+		}
+		return searchByKeywordAndType(storeId, keyword, type);
+	}
 }
