@@ -7,8 +7,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.UUID;
@@ -22,6 +20,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import com.mvp.v1.dandionna.common.dto.ErrorCode;
 import com.mvp.v1.dandionna.common.exeption.BusinessException;
+import com.mvp.v1.dandionna.common.util.RequestDateParser;
 import com.mvp.v1.dandionna.export_job.dto.ExportJobCreateRequest;
 import com.mvp.v1.dandionna.export_job.dto.ExportJobCreateResponse;
 import com.mvp.v1.dandionna.export_job.dto.ExportJobStatusResponse;
@@ -41,7 +40,6 @@ import lombok.RequiredArgsConstructor;
 public class ExportJobService {
 
 	private static final ZoneId ZONE_KST = ZoneId.of("Asia/Seoul");
-	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 	private static final String REPORT_TYPE_OWNER_SALES = "OWNER_SALES";
 	private static final short FORMAT_VERSION = 1;
 
@@ -203,14 +201,7 @@ public class ExportJobService {
 	}
 
 	private LocalDate parseDate(String value, String fieldName) {
-		if (value == null || value.isBlank()) {
-			throw new BusinessException(ErrorCode.BAD_REQUEST, fieldName + " 값을 입력하세요.");
-		}
-		try {
-			return LocalDate.parse(value, DATE_FORMAT);
-		} catch (DateTimeParseException ex) {
-			throw new BusinessException(ErrorCode.BAD_REQUEST, fieldName + " 형식은 YYYY.MM.DD 입니다.");
-		}
+		return RequestDateParser.parseIsoDate(value, fieldName);
 	}
 
 	private ExportJobCreateResponse toCreateResponse(ExportJob job) {

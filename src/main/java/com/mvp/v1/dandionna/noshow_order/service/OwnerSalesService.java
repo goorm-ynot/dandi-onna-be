@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mvp.v1.dandionna.common.dto.ErrorCode;
 import com.mvp.v1.dandionna.common.exeption.BusinessException;
+import com.mvp.v1.dandionna.common.util.RequestDateParser;
 import com.mvp.v1.dandionna.noshow_order.dto.OwnerSalesResponse;
 import com.mvp.v1.dandionna.noshow_order.entity.NoShowOrder;
 import com.mvp.v1.dandionna.noshow_order.repository.NoShowOrderRepository;
@@ -30,7 +30,6 @@ import lombok.RequiredArgsConstructor;
 public class OwnerSalesService {
 
 	private static final ZoneId ZONE_KST = ZoneId.of("Asia/Seoul");
-	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 	private static final DateTimeFormatter DATETIME_FORMAT = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm")
 		.withZone(ZONE_KST);
 
@@ -79,13 +78,6 @@ public class OwnerSalesService {
 	}
 
 	private LocalDate parseDate(String value, String fieldName) {
-		if (value == null || value.isBlank()) {
-			throw new BusinessException(ErrorCode.BAD_REQUEST, fieldName + " 값을 입력하세요.");
-		}
-		try {
-			return LocalDate.parse(value, DATE_FORMAT);
-		} catch (DateTimeParseException ex) {
-			throw new BusinessException(ErrorCode.BAD_REQUEST, fieldName + " 형식은 YYYY.MM.DD 입니다.");
-		}
+		return RequestDateParser.parseIsoDate(value, fieldName);
 	}
 }
