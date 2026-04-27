@@ -171,7 +171,7 @@
 - `POST /api/v1/owner/orders/{orderId}/complete`
 
 ## 매출 (사장님)
-- `GET /api/v1/owner/sales?startDate=YYYY.MM.DD&endDate=YYYY.MM.DD&page&size`
+- `GET /api/v1/owner/sales?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&page&size`
 - `POST /api/v1/owner/sales/export` (비동기 엑셀 생성 요청)
 - `GET /api/v1/owner/sales/export/{jobId}` (폴링 상태 조회/다운로드 URL)
 - `POST /api/v1/owner/sales/export/{jobId}/refresh` (다운로드 URL 재발급)

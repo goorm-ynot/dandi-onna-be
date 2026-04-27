@@ -39,6 +39,8 @@ build/
 .springBeans
 .sts4-cache
 bin/
+!deploy/bin/
+!deploy/bin/*.sh
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
@@ -52,6 +54,7 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 *.env
+artifacts/perf/
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

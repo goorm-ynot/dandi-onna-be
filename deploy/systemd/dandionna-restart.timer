@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily 11:00 restart for dandionna when active
+
+[Timer]
+OnCalendar=*-*-* 11:00:00
+Persistent=true
+Unit=dandionna-restart-if-running.service
+
+[Install]
+WantedBy=timers.target
