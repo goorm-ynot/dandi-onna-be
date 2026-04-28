@@ -8,7 +8,7 @@
 
 단디온나는 음식점 노쇼로 발생한 재고 손실을 줄이기 위해, 사장님이 노쇼 메뉴를 등록하면 소비자가 할인된 가격으로 바로 주문할 수 있도록 만든 O2O 예약·주문 플랫폼입니다.
 
-정식 발표 이후에도 남은 인원으로 추가 개발을 진행하며, AWS/S3 기반 발표 구조를 MinIO-compatible 로컬 인프라와 운영/성능 측정 체계로 확장했습니다.
+정식 발표 이후에도 추가 개발을 진행하며, 발표 당시의 AWS/S3 기반 구조를 S3-compatible 스토리지, 로컬 인프라, 운영/성능 측정 체계로 확장했습니다.
 
 | 항목 | 내용 |
 |---|---|
@@ -229,8 +229,6 @@ Spring Security 기반 Stateless 보안 구조를 구성했습니다.
 - `src/main/java/com/mvp/v1/dandionna/home/service/HomeService.java`
 - `src/main/resources/db/migration/V1__base_schema.sql`
 
-> 참고: 발표자료에는 5km 반경 노출이 포함되어 있으나, 현재 코드에서는 `ST_DistanceSphere` 기반 거리 계산과 거리순 정렬만 확인됩니다. `ST_DWithin(..., 5000)` 같은 반경 필터는 확인되지 않아 문서에서는 5km 반경 구현이라고 표현하지 않습니다.
-
 ### 3.8 관측성 / 운영 / 성능 측정
 
 운영 가시성과 성능 측정 재현성을 위해 metric, logging, deploy asset, k6 scripts를 정리했습니다.
@@ -267,7 +265,20 @@ Spring Security 기반 Stateless 보안 구조를 구성했습니다.
 - `deploy/bin/`
 - `deploy/nginx/dandionna.conf`
 
-## 4. 기술 스택
+## 4. 구현 범위 기준
+
+이 문서는 실제 코드와 문서에서 확인 가능한 구현 범위를 기준으로 작성했습니다.
+
+| 영역 | 현재 구현 기준 |
+|---|---|
+| Storage | AWS SDK S3 API 기반이며, MinIO 등 S3-compatible endpoint에 연결할 수 있도록 환경변수 기반 설정을 정리했습니다. |
+| Payment | 현재 주문 생성은 dummy payment 기반으로 처리합니다. 결제 상태, 결제수단, paymentTxId, paidAmount는 도메인 데이터로 관리합니다. |
+| Location | 현재 구현은 `ST_DistanceSphere` 기반 거리 계산과 거리순 정렬입니다. 반경 제한은 정책 확장 지점으로 분리할 수 있습니다. |
+| Notification Retry | 실패 attempt 증가, requeue, DLQ 이동, 수동 replay 구조가 있습니다. `nextRetryAt` 기반 지연 실행은 별도 확장 지점입니다. |
+| Performance | k6 + Docker 기반 측정 절차와 seed SQL을 정리했습니다. 성능 수치 자체는 별도 `artifacts/perf` 결과 파일 기준으로 기록합니다. |
+| Monitoring | Prometheus business metric과 MDC JSON 로깅을 구성했습니다. Dashboard/alert는 운영 환경에서 추가 확장할 수 있습니다. |
+
+## 5. 기술 스택
 
 - Java 21
 - Spring Boot
@@ -287,7 +298,7 @@ Spring Security 기반 Stateless 보안 구조를 구성했습니다.
 - Flyway
 - Gradle
 
-## 5. 테스트 / 검증
+## 6. 테스트 / 검증
 
 현재 브랜치 기준으로 `./gradlew test --no-daemon` 실행 결과 전체 테스트가 통과했습니다.
 
@@ -297,7 +308,7 @@ Spring Security 기반 Stateless 보안 구조를 구성했습니다.
 
 인프라 의존 테스트는 `DANDI_RUN_INFRA_TESTS=true` 환경변수가 있을 때만 실행되도록 분리했습니다.
 
-## 6. 이 프로젝트에서 보여줄 수 있는 역량
+## 7. 이 프로젝트에서 보여줄 수 있는 역량
 
 - 백엔드 단독 개발자로 서비스 핵심 도메인 전체를 구현한 경험
 - 인증/인가, 도메인 상태 전이, 동시성 제어, 알림, 파일 export, 이미지 업로드까지 연결한 경험
@@ -306,17 +317,6 @@ Spring Security 기반 Stateless 보안 구조를 구성했습니다.
 - Prometheus metric, MDC logging, k6 성능 측정 체계를 통해 운영 관점까지 확장한 경험
 - 정식 프로젝트 이후 로컬 인프라와 운영/성능 문서를 정리하며 웹앱 완성도를 높인 경험
 
-## 7. 이력서용 요약
+## 8. 이력서용 요약
 
 단디온나는 노쇼로 발생한 재고 손실을 즉시 판매 기회로 전환하는 O2O 예약·주문 플랫폼입니다. 백엔드 단독 개발자로 인증/인가, 매장/메뉴, 노쇼 게시글, 예약 게시, 소비자 주문, 알림, 매출 조회·엑셀 export API를 설계·구현했습니다. 특히 JWE 인증, Redis token blacklist, PESSIMISTIC_WRITE 기반 잔여 수량 차감, Redis Stream 알림/엑셀 export worker, S3-compatible 업로드, Prometheus metric, k6 성능 측정 체계까지 백엔드 개발과 운영 관점을 함께 정리했습니다.
-
-## 8. 표현 주의 사항
-
-| 피해야 할 표현 | 이유 | 안전한 표현 |
-|---|---|---|
-| AWS를 완전히 제거했다 | AWS SDK S3 API는 계속 사용 | S3-compatible MinIO endpoint에서도 동작하도록 구성 |
-| 실제 결제 PG를 구현했다 | 현재 주문 흐름은 dummy payment 기반 | dummy payment 기반 주문 생성 흐름 구현 |
-| 5km 반경 조회를 구현했다 | 현재 코드에서 반경 필터는 확인되지 않음 | PostGIS 기반 거리 계산과 거리순 정렬 구현 |
-| 지연 재시도 기반 DLQ 운영 체계를 완성했다 | nextRetryAt 기반 지연 실행은 확인되지 않음 | DLQ 이동과 수동 replay 구조 구현 |
-| 성능 개선 수치를 달성했다 | k6 결과 수치 파일은 아직 확인하지 않음 | k6 성능 측정 절차와 seed SQL 정리 |
-| 운영 모니터링을 완성했다 | dashboard/alert는 확인되지 않음 | Prometheus business metric과 MDC JSON 로깅 구성 |
