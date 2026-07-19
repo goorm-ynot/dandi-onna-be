@@ -117,17 +117,21 @@ public class MenuImageTempUploadService {
 		}
 
 		boolean transactionActive = TransactionSynchronizationManager.isActualTransactionActive();
-		TokenMetadata metadata = loadMetadata(uploadToken);
-		validateOwner(metadata, ownerId);
-		validateNotExpired(metadata);
-		validateConsumable(metadata);
-
-		markInUse(redisKey);
+		boolean markedInUse = false;
+		boolean lockManagedByTransaction = false;
 		try {
+			TokenMetadata metadata = loadMetadata(uploadToken);
+			validateOwner(metadata, ownerId);
+			validateNotExpired(metadata);
+			validateConsumable(metadata);
+
+			markInUse(redisKey);
+			markedInUse = true;
 			String finalKey = UploadTarget.MENU_IMAGE.generateKey(menuId.toString(), metadata.tempKey());
 			S3Metadata copied = uploadService.copy(metadata.tempKey(), finalKey);
 			if (transactionActive) {
 				registerTransactionHooks(redisKey, lockKey, metadata.tempKey());
+				lockManagedByTransaction = true;
 			} else {
 				markConsumed(redisKey);
 				redisTemplate.delete(redisKey);
@@ -135,10 +139,12 @@ public class MenuImageTempUploadService {
 			}
 			return copied;
 		} catch (RuntimeException ex) {
-			restoreConfirmed(redisKey);
+			if (markedInUse) {
+				restoreConfirmed(redisKey);
+			}
 			throw ex;
 		} finally {
-			if (!transactionActive) {
+			if (!lockManagedByTransaction) {
 				redisTemplate.delete(lockKey);
 			}
 		}

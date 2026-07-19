@@ -26,6 +26,7 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.mvp.v1.dandionna.common.dto.ErrorCode;
 import com.mvp.v1.dandionna.common.exeption.BusinessException;
@@ -105,7 +106,7 @@ class MenuImageTempUploadServiceTest {
 	}
 
 	@Test
-	void consume_rejectsUnconfirmedToken() {
+	void consume_rejectsUnconfirmedTokenAndReleasesLockWithinTransaction() {
 		UUID ownerId = UUID.randomUUID();
 		String uploadToken = UUID.randomUUID().toString();
 		when(valueOperations.setIfAbsent(eq("menu:image:temp:lock:" + uploadToken), eq("1"), eq(Duration.ofSeconds(60))))
@@ -118,11 +119,18 @@ class MenuImageTempUploadServiceTest {
 			"createdAtEpochSecond", String.valueOf(Instant.now().getEpochSecond())
 		));
 
-		assertThatThrownBy(() -> service.consumeForMenu(ownerId, uploadToken, UUID.randomUUID()))
-			.isInstanceOf(BusinessException.class)
-			.satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo(ErrorCode.MENU_IMAGE_UPLOAD_NOT_CONFIRMED));
+		TransactionSynchronizationManager.setActualTransactionActive(true);
+		try {
+			assertThatThrownBy(() -> service.consumeForMenu(ownerId, uploadToken, UUID.randomUUID()))
+				.isInstanceOf(BusinessException.class)
+				.satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+					.isEqualTo(ErrorCode.MENU_IMAGE_UPLOAD_NOT_CONFIRMED));
+		} finally {
+			TransactionSynchronizationManager.clear();
+		}
 
 		verify(uploadService, never()).copy(anyString(), anyString());
+		verify(redisTemplate).delete("menu:image:temp:lock:" + uploadToken);
 	}
 
 	@Test
