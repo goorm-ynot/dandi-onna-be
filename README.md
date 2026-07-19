@@ -7,7 +7,7 @@
 ## 문서
 
 - [PORTFOLIO.md](PORTFOLIO.md) - 백엔드 구현 범위와 기술적 기여 요약
-- [docs/repo-notes.md](docs/repo-notes.md) - 브랜치 기준, 구현 범위, 검토 순서
+- [doc/repo-notes.md](doc/repo-notes.md) - 브랜치 기준, 구현 범위, 검토 순서
 - [doc/database.md](doc/database.md) - ERD/테이블 설명
 - [doc/api-spec.md](doc/api-spec.md) - REST API 명세
 - [doc/architecture.md](doc/architecture.md) - 아키텍처와 Mermaid 다이어그램
