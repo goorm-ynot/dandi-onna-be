@@ -11,6 +11,7 @@
 - `CONTRIBUTING.md`와 PR 템플릿에 이슈·브랜치·커밋·검증·병합 공식 규칙 추가
 
 ### Changed
+- 현재 구현에 맞춰 메뉴 이미지 임시 업로드 컨트롤러와 API 경로를 아키텍처 문서에 반영
 - GitHub Issue 템플릿과 CI를 공식 규칙에 맞게 보강하고 전체 기본 테스트를 required check에 연결
 - 문서 파일을 단일 표준 경로인 `doc/`로 통합하고 README 링크와 ignore 규칙 정리
 - 문서 모음(`doc/*.md`) 최신 상태로 갱신

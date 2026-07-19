@@ -38,7 +38,7 @@ flowchart TB
             HomeCtrl["HomeController\n/api/v1/home/**"]
             FavCtrl["FavoriteController\n/api/v1/favorites"]
             PushCtrl["PushTokenController\n/api/v1/push/tokens"]
-            UploadCtrls["StoreUploadController\nMenuUploadController\n/api/v1/**/uploads/**"]
+            UploadCtrls["StoreUploadController\n/api/v1/stores/uploads/**\nMenuTempUploadController\n/api/v1/owner/menu-images/temp/**"]
         end
 
         subgraph Services["서비스 계층"]
@@ -195,8 +195,8 @@ flowchart LR
     end
 
     subgraph s3_pkg["s3"]
-        S3Ctrl["controller/\nStoreUploadController\nMenuUploadController"]
-        S3Svc["service/\nUploadService"]
+        S3Ctrl["controller/\nStoreUploadController\nMenuTempUploadController"]
+        S3Svc["service/\nUploadService\nMenuImageTempUploadService"]
     end
 
     subgraph notification["notification"]

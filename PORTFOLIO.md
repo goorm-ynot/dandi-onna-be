@@ -1,8 +1,8 @@
 # Dandi-Onna - 노쇼 재고 손실을 판매 기회로 전환하는 O2O 예약·주문 플랫폼
 
-> 이 문서는 단디온나 백엔드에서 담당한 구현 범위와 기술적 기여를 정리한 문서입니다.  
-> 기준 브랜치: `feat/38-menu-domain-expansion`  
-> 문서 브랜치: `docs/dandi-onna-portfolio`
+> - 이 문서는 단디온나 백엔드에서 담당한 구현 범위와 기술적 기여를 정리한 문서입니다.
+> - 기준 브랜치 `feat/38-menu-domain-expansion`
+> - 문서 브랜치 `docs/dandi-onna-portfolio`
 
 ## 1. 프로젝트 개요
 
