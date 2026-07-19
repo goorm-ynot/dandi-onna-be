@@ -11,6 +11,7 @@
 - `CONTRIBUTING.md`와 PR 템플릿에 이슈·브랜치·커밋·검증·병합 공식 규칙 추가
 
 ### Changed
+- Gradle 로컬 wrapper 다운로드 캐시를 Git 추적에서 제거하고 `.gradle-local/` ignore 규칙 추가
 - 메뉴 이미지 업로드 토큰 검증 실패 시 Redis 잠금을 즉시 해제하도록 보완
 - 현재 구현에 맞춰 메뉴 이미지 임시 업로드 컨트롤러와 API 경로를 아키텍처 문서에 반영
 - GitHub Issue 템플릿과 CI를 공식 규칙에 맞게 보강하고 전체 기본 테스트를 required check에 연결
