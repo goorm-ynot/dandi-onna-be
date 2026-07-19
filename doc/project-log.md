@@ -8,8 +8,10 @@
 ## Unreleased (진행 중)
 ### Added
 - 문서 업데이트 필수 규칙: `doc/*` 변경 시 해당 문서 내용 동기화 및 로그 기록
+- `CONTRIBUTING.md`와 PR 템플릿에 이슈·브랜치·커밋·검증·병합 공식 규칙 추가
 
 ### Changed
+- GitHub Issue 템플릿과 CI를 공식 규칙에 맞게 보강하고 전체 기본 테스트를 required check에 연결
 - 문서 파일을 단일 표준 경로인 `doc/`로 통합하고 README 링크와 ignore 규칙 정리
 - 문서 모음(`doc/*.md`) 최신 상태로 갱신
 - 매출 엑셀 발행 필드 정의(요약/상세 기준) 문서화

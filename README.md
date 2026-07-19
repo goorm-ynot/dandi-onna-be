@@ -6,6 +6,7 @@
 
 ## 문서
 
+- [CONTRIBUTING.md](CONTRIBUTING.md) - 공식 이슈·브랜치·커밋·PR·검증·병합 규칙
 - [PORTFOLIO.md](PORTFOLIO.md) - 백엔드 구현 범위와 기술적 기여 요약
 - [doc/repo-notes.md](doc/repo-notes.md) - 브랜치 기준, 구현 범위, 검토 순서
 - [doc/database.md](doc/database.md) - ERD/테이블 설명
