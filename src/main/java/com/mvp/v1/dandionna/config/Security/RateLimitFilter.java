@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
  *
  * <ul>
  *     <li>로그인: IP 기반 5회/분</li>
+ *     <li>사장님 메뉴 조회(이미지 URL 포함): 사용자 기반 30회/분</li>
  *     <li>엑셀 Export: 사용자 기반 3회/시간</li>
  *     <li>일반 API: 사용자(또는 IP) 기반 100회/분</li>
  * </ul>
@@ -63,6 +64,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
 			// 로그인: IP 기반 제한
 			key = RATE_LIMIT_PREFIX + "login:" + getClientIp(request);
 			maxRequests = properties.loginPerMinute();
+			window = Duration.ofMinutes(1);
+		} else if (path.startsWith("/api/v1/owner/menus") && "GET".equals(method)) {
+			// 메뉴 조회(이미지 URL 포함): 사용자 기반 제한
+			String identifier = getCurrentUserId();
+			if (identifier == null) {
+				identifier = "ip:" + getClientIp(request);
+			}
+			key = RATE_LIMIT_PREFIX + "menu-image-read:" + identifier;
+			maxRequests = properties.menuImageReadPerMinute();
 			window = Duration.ofMinutes(1);
 		} else if (path.startsWith("/api/v1/owner/sales/export") && "POST".equals(method)) {
 			// 엑셀 Export: 사용자 기반 제한

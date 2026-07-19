@@ -8,8 +8,13 @@
 ## Unreleased (진행 중)
 ### Added
 - 문서 업데이트 필수 규칙: `doc/*` 변경 시 해당 문서 내용 동기화 및 로그 기록
+- `CONTRIBUTING.md`와 PR 템플릿에 이슈·브랜치·커밋·검증·병합 공식 규칙 추가
 
 ### Changed
+- 메뉴 이미지 업로드 토큰 검증 실패 시 Redis 잠금을 즉시 해제하도록 보완
+- 현재 구현에 맞춰 메뉴 이미지 임시 업로드 컨트롤러와 API 경로를 아키텍처 문서에 반영
+- GitHub Issue 템플릿과 CI를 공식 규칙에 맞게 보강하고 전체 기본 테스트를 required check에 연결
+- 문서 파일을 단일 표준 경로인 `doc/`로 통합하고 README 링크와 ignore 규칙 정리
 - 문서 모음(`doc/*.md`) 최신 상태로 갱신
 - 매출 엑셀 발행 필드 정의(요약/상세 기준) 문서화
 - 매출 엑셀 비동기/폴링/재발급 API, TTL, 중복 요청 제어 정책 문서화
@@ -80,7 +85,7 @@
 ### 변경 내역 (Evidence 필수)
 - 관련 문서:
   - `docs/analysis/` 하위 14개 도메인별 분석 문서 생성
-  - `docs/PROJECT_LOG.md` 생성 및 기록 체계 수립
+  - `doc/project-log.md` 생성 및 기록 체계 수립
 
 ### 검증(필수)
 - 수동 검증: `NoShowOrderConsumerService`의 동시성 제어 로직(비관적 락) 실구현 확인

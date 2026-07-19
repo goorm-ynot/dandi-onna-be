@@ -1,0 +1,25 @@
+[Unit]
+Description=Dandionna Spring Boot application
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/dandionna/dandionna.env
+ConditionPathExists=/opt/dandionna/current/dandionna-app.jar
+
+[Service]
+Type=simple
+User=dandionna
+Group=dandionna
+WorkingDirectory=/opt/dandionna/current
+EnvironmentFile=-/etc/dandionna/dandionna.env
+ExecStart=/bin/bash -lc 'exec "${JAVA_BIN:-/usr/bin/java}" -Duser.timezone=Asia/Seoul -XX:+ExitOnOutOfMemoryError -XX:InitialRAMPercentage=25.0 -XX:MaxRAMPercentage=70.0 -jar /opt/dandionna/current/dandionna-app.jar'
+SuccessExitStatus=143
+Restart=always
+RestartSec=5
+TimeoutStopSec=90
+KillSignal=SIGTERM
+StandardOutput=journal
+StandardError=journal
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

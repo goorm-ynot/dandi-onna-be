@@ -51,6 +51,8 @@ public class OrphanObjectCleanupScheduler {
 		orphanKeys.addAll(findOrphansInPrefix("stores/", referencedKeys, cutoff));
 		// menus/ 폴더
 		orphanKeys.addAll(findOrphansInPrefix("menus/", referencedKeys, cutoff));
+		// temp/menu-images/ 폴더
+		orphanKeys.addAll(findObjectsOlderThan("temp/menu-images/", cutoff));
 
 		for (String key : orphanKeys) {
 			try {
@@ -107,5 +109,33 @@ public class OrphanObjectCleanupScheduler {
 		} while (continuationToken != null);
 
 		return orphans;
+	}
+
+	private List<String> findObjectsOlderThan(String prefix, Instant cutoff) {
+		List<String> objects = new ArrayList<>();
+		String continuationToken = null;
+
+		do {
+			ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
+				.bucket(bucket)
+				.prefix(prefix)
+				.maxKeys(1000);
+
+			if (continuationToken != null) {
+				requestBuilder.continuationToken(continuationToken);
+			}
+
+			ListObjectsV2Response response = s3Client.listObjectsV2(requestBuilder.build());
+
+			for (S3Object obj : response.contents()) {
+				if (obj.lastModified().isBefore(cutoff)) {
+					objects.add(obj.key());
+				}
+			}
+
+			continuationToken = response.isTruncated() ? response.nextContinuationToken() : null;
+		} while (continuationToken != null);
+
+		return objects;
 	}
 }

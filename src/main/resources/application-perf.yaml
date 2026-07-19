@@ -1,0 +1,43 @@
+server:
+  port: ${SERVER_PORT:18080}
+  shutdown: graceful
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+logging:
+  level:
+    root: INFO
+    com.mvp.v1.dandionna: INFO
+    com.mvp.v1.dandionna.s3: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.data.redis: INFO
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+  show-actuator: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+
+app:
+  rate-limit:
+    login-per-minute: ${APP_RATE_LIMIT_LOGIN_PER_MINUTE:1000}
+    api-per-minute: ${APP_RATE_LIMIT_API_PER_MINUTE:10000}
+    menu-image-read-per-minute: ${APP_RATE_LIMIT_MENU_IMAGE_READ_PER_MINUTE:10000}
+    export-per-hour: ${APP_RATE_LIMIT_EXPORT_PER_HOUR:1000}
+  noshow:
+    schedule:
+      poll-interval-ms: ${APP_NOSHOW_SCHEDULE_POLL_INTERVAL_MS:1000}
+      batch-size: ${APP_NOSHOW_SCHEDULE_BATCH_SIZE:20}
+    post-expiry:
+      poll-interval-ms: ${APP_NOSHOW_POST_EXPIRY_POLL_INTERVAL_MS:1000}

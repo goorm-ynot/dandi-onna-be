@@ -3,7 +3,8 @@ package com.mvp.v1.dandionna.config.Security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -29,9 +32,10 @@ class RateLimitFilterTest {
 
 	@BeforeEach
 	void setUp() {
-		RateLimitProperties props = new RateLimitProperties(5, 100, 3);
+		RateLimitProperties props = new RateLimitProperties(5, 100, 3, 30);
 		filter = new RateLimitFilter(redisTemplate, props);
-		when(redisTemplate.opsForValue()).thenReturn(valueOps);
+		lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
+		SecurityContextHolder.clearContext();
 	}
 
 	@Test
@@ -96,5 +100,38 @@ class RateLimitFilterTest {
 		filter.doFilter(request, response, new MockFilterChain());
 
 		assertThat(response.getStatus()).isEqualTo(200);
+	}
+
+	@Test
+	void 메뉴_조회는_별도_레이트리밋을_사용() throws Exception {
+		when(valueOps.increment(anyString())).thenReturn(1L);
+		TestingAuthenticationToken authentication = new TestingAuthenticationToken("owner-1", null, "ROLE_OWNER");
+		authentication.setAuthenticated(true);
+		SecurityContextHolder.getContext().setAuthentication(authentication);
+
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/owner/menus");
+		MockHttpServletResponse response = new MockHttpServletResponse();
+
+		filter.doFilter(request, response, new MockFilterChain());
+
+		assertThat(response.getStatus()).isEqualTo(200);
+		verify(valueOps).increment("ratelimit:menu-image-read:owner-1");
+	}
+
+	@Test
+	void 메뉴_조회_레이트리밋_초과시_429() throws Exception {
+		when(valueOps.increment(anyString())).thenReturn(31L);
+		TestingAuthenticationToken authentication = new TestingAuthenticationToken("owner-1", null, "ROLE_OWNER");
+		authentication.setAuthenticated(true);
+		SecurityContextHolder.getContext().setAuthentication(authentication);
+
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/owner/menus/123");
+		MockHttpServletResponse response = new MockHttpServletResponse();
+
+		filter.doFilter(request, response, new MockFilterChain());
+
+		assertThat(response.getStatus()).isEqualTo(429);
+		assertThat(response.getHeader("Retry-After")).isEqualTo("60");
+		assertThat(response.getHeader("X-RateLimit-Limit")).isEqualTo("30");
 	}
 }

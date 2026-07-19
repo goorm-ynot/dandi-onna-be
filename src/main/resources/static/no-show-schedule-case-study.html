@@ -201,6 +201,23 @@
     <label>크기
       <input id="menuSize" type="number" min="1" value="20" />
     </label>
+    <label>검색어
+      <input id="menuKeyword" placeholder="메뉴명 또는 설명" />
+    </label>
+    <label>유형
+      <select id="menuType">
+        <option value="">전체</option>
+        <option value="SINGLE">SINGLE</option>
+        <option value="SET">SET</option>
+      </select>
+    </label>
+    <label>실판매 상태
+      <select id="menuEffectiveStatus">
+        <option value="">전체</option>
+        <option value="ON_SALE">ON_SALE</option>
+        <option value="SOLD_OUT">SOLD_OUT</option>
+      </select>
+    </label>
   </div>
   <div class="actions">
     <button id="btnMenuList" class="secondary">메뉴 목록 조회</button>
@@ -616,8 +633,15 @@
   async function runMenuList() {
     const page = Number(document.getElementById("menuPage").value || 0);
     const size = Number(document.getElementById("menuSize").value || 20);
+    const keyword = document.getElementById("menuKeyword").value.trim();
+    const type = document.getElementById("menuType").value;
+    const effectiveStatus = document.getElementById("menuEffectiveStatus").value;
+    const query = new URLSearchParams({ page: String(page), size: String(size) });
+    if (keyword) query.set("keyword", keyword);
+    if (type) query.set("type", type);
+    if (effectiveStatus) query.set("effectiveStatus", effectiveStatus);
     try {
-      const body = await apiFetch(`/owner/menus?page=${page}&size=${size}`);
+      const body = await apiFetch(`/api/v1/owner/menus?${query.toString()}`);
       setResult("menuResult", body);
       log("메뉴 목록 조회 성공", body);
     } catch (e) {

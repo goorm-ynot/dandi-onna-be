@@ -52,6 +52,7 @@ dependencies {
     // Actuator + Prometheus
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    runtimeOnly 'io.prometheus:prometheus-metrics-exposition-textformats'
 
     // 구조화 로깅 (JSON) - 운영 환경
     implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
@@ -80,4 +81,8 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.named('bootJar') {
+	archiveFileName = 'dandionna-app.jar'
 }

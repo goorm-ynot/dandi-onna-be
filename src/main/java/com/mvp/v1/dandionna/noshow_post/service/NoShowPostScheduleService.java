@@ -20,7 +20,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import com.mvp.v1.dandionna.common.dto.ErrorCode;
 import com.mvp.v1.dandionna.common.exeption.BusinessException;
-import com.mvp.v1.dandionna.menu.repository.MenuRepository;
+import com.mvp.v1.dandionna.menu.service.MenuService;
 import com.mvp.v1.dandionna.noshow_post.dto.NoShowBatchCreateRequest;
 import com.mvp.v1.dandionna.noshow_post.dto.NoShowPostScheduleCreateRequest;
 import com.mvp.v1.dandionna.noshow_post.dto.NoShowPostScheduleCreateResponse;
@@ -45,7 +45,7 @@ public class NoShowPostScheduleService {
 	private static final ZoneOffset DB_ZONE = ZoneOffset.UTC;
 
 	private final StoreRepository storeRepository;
-	private final MenuRepository menuRepository;
+	private final MenuService menuService;
 	private final NoShowPresetService noShowPresetService;
 	private final NoShowPostScheduleRepository noShowPostScheduleRepository;
 	private final NoShowPostScheduleItemRepository noShowPostScheduleItemRepository;
@@ -268,10 +268,7 @@ public class NoShowPostScheduleService {
 				throw new BusinessException(ErrorCode.LISTING_QTY_INVALID, "수량은 1 이상이어야 합니다.");
 			}
 		}
-		int existsCount = menuRepository.findByStoreIdAndIdIn(storeId, menuIds).size();
-		if (existsCount != menuIds.size()) {
-			throw new BusinessException(ErrorCode.NOT_FOUND, "존재하지 않는 메뉴가 포함되어 있습니다.");
-		}
+		menuService.loadMenusForPosting(storeId, menuIds);
 	}
 
 	private Store loadStore(UUID ownerId) {

@@ -1,6 +1,7 @@
 package com.mvp.v1.dandionna.noshow_post.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -8,6 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -17,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -28,9 +32,14 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
+import com.mvp.v1.dandionna.common.dto.ErrorCode;
+import com.mvp.v1.dandionna.common.exeption.BusinessException;
 import com.mvp.v1.dandionna.favorite.service.FavoriteNotificationService;
 import com.mvp.v1.dandionna.menu.entity.Menu;
+import com.mvp.v1.dandionna.menu.entity.MenuStatus;
+import com.mvp.v1.dandionna.menu.entity.MenuType;
 import com.mvp.v1.dandionna.menu.repository.MenuRepository;
+import com.mvp.v1.dandionna.menu.service.MenuService;
 import com.mvp.v1.dandionna.noshow_post.dto.NoShowBatchCreateRequest;
 import com.mvp.v1.dandionna.noshow_post.dto.NoShowPostsResponse;
 import com.mvp.v1.dandionna.noshow_post.entity.NoShowPost;
@@ -53,14 +62,30 @@ class NoShowPostServiceTest {
 	@Mock
 	private MenuRepository menuRepository;
 	@Mock
+	private MenuService menuService;
+	@Mock
 	private NoShowPostRepository noShowPostRepository;
 	@Mock
 	private NoShowPostHistoryRepository historyRepository;
 	@Mock
 	private FavoriteNotificationService favoriteNotificationService;
 
-	@InjectMocks
 	private NoShowPostService noShowPostService;
+
+	private final Clock fixedClock = Clock.fixed(Instant.parse("2026-04-14T12:00:00Z"), ZoneOffset.UTC);
+
+	@BeforeEach
+	void setUp() {
+		noShowPostService = new NoShowPostService(
+			storeRepository,
+			menuRepository,
+			menuService,
+			noShowPostRepository,
+			historyRepository,
+			favoriteNotificationService,
+			fixedClock
+		);
+	}
 
 	@Test
 	void createBatch_insertsNewPostWhenNoneExists() {
@@ -71,10 +96,10 @@ class NoShowPostServiceTest {
 		Menu menu = createMenu(menuId, storeId, "모둠회", 20000);
 
 		when(storeRepository.findByOwnerUserId(userId)).thenReturn(Optional.of(store));
-		when(menuRepository.findByStoreIdAndIdIn(eq(storeId), any())).thenReturn(List.of(menu));
+		when(menuService.loadMenusForPosting(eq(storeId), any())).thenReturn(Map.of(menuId, menu));
 		when(noShowPostRepository.findForUpdate(eq(storeId), eq(menuId), any())).thenReturn(Optional.empty());
 
-		OffsetDateTime expireAt = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(30);
+		OffsetDateTime expireAt = OffsetDateTime.now(fixedClock).plusMinutes(30);
 		NoShowBatchCreateRequest request = new NoShowBatchCreateRequest(
 			List.of(new NoShowBatchCreateRequest.Item(menuId, 2)),
 			40,
@@ -103,7 +128,7 @@ class NoShowPostServiceTest {
 		Store store = createStore(storeId, userId, LocalTime.of(10, 0), LocalTime.of(22, 0));
 		Menu menu = createMenu(menuId, storeId, "모둠회", 15000);
 
-		OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+		OffsetDateTime now = OffsetDateTime.now(fixedClock);
 		NoShowPost existing = NoShowPost.create(
 			storeId,
 			menuId,
@@ -117,7 +142,7 @@ class NoShowPostServiceTest {
 		ReflectionTestUtils.setField(existing, "qtyRemaining", 1);
 
 		when(storeRepository.findByOwnerUserId(userId)).thenReturn(Optional.of(store));
-		when(menuRepository.findByStoreIdAndIdIn(eq(storeId), any())).thenReturn(List.of(menu));
+		when(menuService.loadMenusForPosting(eq(storeId), any())).thenReturn(Map.of(menuId, menu));
 		when(noShowPostRepository.findForUpdate(eq(storeId), eq(menuId), any())).thenReturn(Optional.of(existing));
 
 		NoShowBatchCreateRequest request = new NoShowBatchCreateRequest(
@@ -138,6 +163,28 @@ class NoShowPostServiceTest {
 	}
 
 	@Test
+	void createBatch_rejectsMenuThatIsNotOnSale() {
+		UUID userId = UUID.randomUUID();
+		UUID storeId = UUID.randomUUID();
+		UUID menuId = UUID.randomUUID();
+		Store store = createStore(storeId, userId, LocalTime.of(10, 0), LocalTime.of(22, 0));
+
+		when(storeRepository.findByOwnerUserId(userId)).thenReturn(Optional.of(store));
+		when(menuService.loadMenusForPosting(eq(storeId), any()))
+			.thenThrow(new BusinessException(ErrorCode.MENU_NOT_ON_SALE, "판매중이 아닌 메뉴가 포함되어 있습니다."));
+
+			NoShowBatchCreateRequest request = new NoShowBatchCreateRequest(
+				List.of(new NoShowBatchCreateRequest.Item(menuId, 1)),
+				40,
+				OffsetDateTime.now(fixedClock).plusMinutes(30)
+			);
+
+		assertThatThrownBy(() -> noShowPostService.createBatch(userId, request))
+			.isInstanceOf(BusinessException.class)
+			.satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo(ErrorCode.MENU_NOT_ON_SALE));
+	}
+
+	@Test
 	void listPosts_groupsByVisitTimeDescending() {
 		UUID userId = UUID.randomUUID();
 		UUID storeId = UUID.randomUUID();
@@ -147,7 +194,7 @@ class NoShowPostServiceTest {
 		Menu menuEntityA = createMenu(menuA, storeId, "A세트", 12000);
 		Menu menuEntityB = createMenu(menuB, storeId, "B세트", 15000);
 
-		OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+		OffsetDateTime now = OffsetDateTime.now(fixedClock);
 		NoShowPost first = createPost(storeId, menuA, 40, 7200, 12000, 2, now.plusMinutes(30));
 		NoShowPost second = createPost(storeId, menuB, 40, 9000, 15000, 0, now.plusMinutes(30));
 		NoShowPost third = createPost(storeId, menuA, 50, 6000, 12000, 5, now.plusMinutes(10));
@@ -158,7 +205,7 @@ class NoShowPostServiceTest {
 		when(menuRepository.findByStoreIdAndIdIn(eq(storeId), any()))
 			.thenReturn(List.of(menuEntityA, menuEntityB));
 
-		NoShowPostsResponse response = noShowPostService.listPosts(userId, 0, 10, LocalDate.now());
+		NoShowPostsResponse response = noShowPostService.listPosts(userId, 0, 10, LocalDate.of(2026, 4, 14));
 
 		assertThat(response.posts()).hasSize(3);
 		assertThat(response.posts().get(0).visitTime()).isEqualTo(first.getExpireAt());
@@ -192,7 +239,18 @@ class NoShowPostServiceTest {
 	}
 
 	private Menu createMenu(UUID menuId, UUID storeId, String name, int price) {
-		Menu menu = Menu.create(storeId, name, "설명", price, null, null, null, ImageStatus.pending);
+		Menu menu = Menu.create(
+			storeId,
+			name,
+			"설명",
+			price,
+			MenuStatus.on_sale,
+			MenuType.single,
+			null,
+			null,
+			null,
+			ImageStatus.pending
+		);
 		ReflectionTestUtils.setField(menu, "id", menuId);
 		return menu;
 	}

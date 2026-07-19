@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * app:
  *   rate-limit:
  *     login-per-minute: 5
+ *     menu-image-read-per-minute: 30
  *     api-per-minute: 100
  *     export-per-hour: 3
  * </pre>
@@ -17,11 +18,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record RateLimitProperties(
 	Integer loginPerMinute,
 	Integer apiPerMinute,
-	Integer exportPerHour
+	Integer exportPerHour,
+	Integer menuImageReadPerMinute
 ) {
 	public RateLimitProperties {
 		if (loginPerMinute == null || loginPerMinute <= 0) loginPerMinute = 5;
 		if (apiPerMinute == null || apiPerMinute <= 0) apiPerMinute = 100;
 		if (exportPerHour == null || exportPerHour <= 0) exportPerHour = 3;
+		if (menuImageReadPerMinute == null || menuImageReadPerMinute <= 0) menuImageReadPerMinute = 30;
 	}
 }
