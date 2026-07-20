@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>노쇼 프리셋/지연등록 케이스 스터디</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #0f1217;
+      color: #eef2f7;
+      line-height: 1.5;
+    }
+    h1, h2, h3 {
+      margin: 0 0 10px;
+      font-weight: 700;
+    }
+    p {
+      margin: 0 0 8px;
+    }
+    .hint {
+      font-size: 0.9rem;
+      color: #a9b4c5;
+    }
+    section {
+      border: 1px solid #2a3240;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #171c24;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    input, select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 4px;
+      padding: 10px;
+      border: 1px solid #344054;
+      border-radius: 8px;
+      background: #0d1218;
+      color: #f8fafc;
+    }
+    textarea {
+      min-height: 86px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    button {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #4f7df0;
+      color: #fff;
+      font-weight: 600;
+    }
+    button.secondary {
+      background: #374151;
+    }
+    button.warn {
+      background: #b45309;
+    }
+    button.danger {
+      background: #b91c1c;
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .ok { background: #14532d; color: #bbf7d0; }
+    .bad { background: #7f1d1d; color: #fecaca; }
+    .muted { color: #94a3b8; }
+    #log {
+      min-height: 180px;
+      max-height: 420px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      background: #06080b;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border-bottom: 1px solid #2a3240;
+      padding: 8px;
+      vertical-align: top;
+      text-align: left;
+    }
+    .item-row {
+      border: 1px solid #2a3240;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 10px;
+      background: #111720;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    pre.result {
+      margin-top: 10px;
+      background: #0a0f14;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 10px;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>노쇼 프리셋/지연등록 케이스 스터디</h1>
+  <p class="hint">로그인 -> 프리셋 저장 -> 스케줄 생성 -> 상태 조회 -> 즉시 게시/취소 -> 게시글 확인 흐름을 한 화면에서 테스트합니다.</p>
+</header>
+
+<section>
+  <h2>1) 환경 설정 + 로그인</h2>
+  <div class="row">
+    <label>API Base URL
+      <input id="baseUrl" value="http://localhost:8080" />
+    </label>
+    <label>로그인 ID
+      <input id="loginId" placeholder="CEO1" />
+    </label>
+    <label>비밀번호
+      <input id="password" type="password" placeholder="111111" />
+    </label>
+  </div>
+  <div class="actions">
+    <button id="btnLogin">로그인</button>
+    <button id="btnLogout" class="secondary">세션 초기화</button>
+  </div>
+  <p style="margin-top:10px;">세션 상태: <span id="sessionState" class="status bad">로그아웃</span></p>
+  <p class="hint" id="sessionInfo">accessToken 미보유</p>
+</section>
+
+<section>
+  <h2>2) 기본 프리셋</h2>
+  <div class="actions">
+    <button id="btnPresetGet" class="secondary">기본 프리셋 조회</button>
+  </div>
+  <div class="row">
+    <label>프리셋 이름
+      <input id="presetName" value="기본" />
+    </label>
+    <label>할인율 (%)
+      <input id="discountPercent" type="number" min="30" max="90" value="40" />
+    </label>
+    <label>방문 가능시간 (분)
+      <input id="visitAvailableMinutes" type="number" min="1" max="300" value="30" />
+    </label>
+    <label>판매 대기시간 (분)
+      <input id="saleDelayMinutes" type="number" min="0" max="300" value="30" />
+    </label>
+  </div>
+  <div class="actions">
+    <button id="btnPresetPut">기본 프리셋 저장</button>
+  </div>
+  <pre id="presetResult" class="result"></pre>
+</section>
+
+<section>
+  <h2>3) 메뉴 조회 (참고)</h2>
+  <div class="row">
+    <label>페이지
+      <input id="menuPage" type="number" min="0" value="0" />
+    </label>
+    <label>크기
+      <input id="menuSize" type="number" min="1" value="20" />
+    </label>
+    <label>검색어
+      <input id="menuKeyword" placeholder="메뉴명 또는 설명" />
+    </label>
+    <label>유형
+      <select id="menuType">
+        <option value="">전체</option>
+        <option value="SINGLE">SINGLE</option>
+        <option value="SET">SET</option>
+      </select>
+    </label>
+    <label>실판매 상태
+      <select id="menuEffectiveStatus">
+        <option value="">전체</option>
+        <option value="ON_SALE">ON_SALE</option>
+        <option value="SOLD_OUT">SOLD_OUT</option>
+      </select>
+    </label>
+  </div>
+  <div class="actions">
+    <button id="btnMenuList" class="secondary">메뉴 목록 조회</button>
+  </div>
+  <pre id="menuResult" class="result"></pre>
+</section>
+
+<section>
+  <h2>4) 지연 등록 스케줄 생성</h2>
+  <p class="hint">`presetId`를 비워두면 기본 프리셋을 사용합니다.</p>
+  <div class="row">
+    <label>presetId (선택)
+      <input id="schedulePresetId" placeholder="자동 기본 프리셋 사용" />
+    </label>
+  </div>
+
+  <h3 style="margin-top: 12px;">items</h3>
+  <div id="itemsBox"></div>
+  <div class="actions">
+    <button id="btnAddItem" class="secondary">아이템 추가</button>
+    <button id="btnCreateSchedule">스케줄 생성</button>
+  </div>
+  <pre id="createResult" class="result"></pre>
+</section>
+
+<section>
+  <h2>5) 스케줄 목록/상세/액션</h2>
+  <div class="row">
+    <label>page
+      <input id="listPage" type="number" min="0" value="0" />
+    </label>
+    <label>size
+      <input id="listSize" type="number" min="1" value="10" />
+    </label>
+    <label>status (선택)
+      <select id="listStatus">
+        <option value="">전체</option>
+        <option value="QUEUED">QUEUED</option>
+        <option value="PROCESSING">PROCESSING</option>
+        <option value="PUBLISHED">PUBLISHED</option>
+        <option value="CANCELLED">CANCELLED</option>
+        <option value="FAILED">FAILED</option>
+      </select>
+    </label>
+  </div>
+  <div class="actions">
+    <button id="btnListSchedule" class="secondary">목록 조회</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>scheduleId</th>
+        <th>status</th>
+        <th>startAt</th>
+        <th>expireAt</th>
+        <th>정책</th>
+        <th>액션</th>
+      </tr>
+    </thead>
+    <tbody id="scheduleTbody"></tbody>
+  </table>
+
+  <div class="row" style="margin-top:10px;">
+    <label>scheduleId (직접 입력)
+      <input id="manualScheduleId" placeholder="UUID" />
+    </label>
+  </div>
+  <div class="actions">
+    <button id="btnDetail" class="secondary">상세 조회</button>
+    <button id="btnPublishNow" class="warn">즉시 게시</button>
+    <button id="btnCancelSchedule" class="danger">취소</button>
+  </div>
+  <pre id="detailResult" class="result"></pre>
+</section>
+
+<section>
+  <h2>6) 실제 노쇼 게시글 확인</h2>
+  <div class="row">
+    <label>page
+      <input id="postPage" type="number" min="0" value="0" />
+    </label>
+    <label>size
+      <input id="postSize" type="number" min="1" value="10" />
+    </label>
+    <label>date (선택)
+      <input id="postDate" type="date" />
+    </label>
+  </div>
+  <div class="actions">
+    <button id="btnPostList" class="secondary">노쇼 글 조회</button>
+  </div>
+  <pre id="postResult" class="result"></pre>
+</section>
+
+<section>
+  <h2>로그</h2>
+  <div id="log"></div>
+</section>
+
+<script>
+  const SESSION_KEY = "noshow_case_study_session";
+  const state = {
+    baseUrl: "http://localhost:8080",
+    accessToken: "",
+    refreshToken: "",
+    loginId: "",
+  };
+
+  function now() {
+    return new Date().toLocaleTimeString("ko-KR", { hour12: false });
+  }
+
+  function log(message, data) {
+    const box = document.getElementById("log");
+    const line = `[${now()}] ${message}`;
+    if (data === undefined) {
+      box.textContent = `${line}\n${box.textContent}`;
+      return;
+    }
+    box.textContent = `${line}\n${JSON.stringify(data, null, 2)}\n\n${box.textContent}`;
+  }
+
+  function saveSession() {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      baseUrl: state.baseUrl,
+      accessToken: state.accessToken,
+      refreshToken: state.refreshToken,
+      loginId: state.loginId,
+    }));
+  }
+
+  function loadSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      state.baseUrl = saved.baseUrl || state.baseUrl;
+      state.accessToken = saved.accessToken || "";
+      state.refreshToken = saved.refreshToken || "";
+      state.loginId = saved.loginId || "";
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  function clearSession() {
+    state.accessToken = "";
+    state.refreshToken = "";
+    state.loginId = "";
+    saveSession();
+    syncSessionUI();
+  }
+
+  function syncSessionUI() {
+    document.getElementById("baseUrl").value = state.baseUrl;
+    document.getElementById("loginId").value = state.loginId;
+    const status = document.getElementById("sessionState");
+    const info = document.getElementById("sessionInfo");
+
+    if (state.accessToken) {
+      status.className = "status ok";
+      status.textContent = "로그인";
+      info.textContent = `loginId=${state.loginId || "-"}, accessToken=${state.accessToken.slice(0, 16)}...`;
+    } else {
+      status.className = "status bad";
+      status.textContent = "로그아웃";
+      info.textContent = "accessToken 미보유";
+    }
+  }
+
+  async function refreshAccessToken() {
+    if (!state.refreshToken) return false;
+    try {
+      const res = await fetch(`${state.baseUrl}/api/v1/auth/token/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: state.refreshToken })
+      });
+      const body = await res.json();
+      if (!res.ok || !body?.success || !body?.data?.accessToken) {
+        log("토큰 재발급 실패", body);
+        return false;
+      }
+      state.accessToken = body.data.accessToken;
+      saveSession();
+      syncSessionUI();
+      log("토큰 재발급 성공");
+      return true;
+    } catch (e) {
+      log("토큰 재발급 예외", { error: e.message });
+      return false;
+    }
+  }
+
+  async function apiFetch(path, options = {}, allowRetry = true) {
+    if (!state.accessToken) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    const headers = { ...(options.headers || {}) };
+    if (!headers["Content-Type"] && options.body && typeof options.body === "string") {
+      headers["Content-Type"] = "application/json";
+    }
+    headers["Authorization"] = `Bearer ${state.accessToken}`;
+
+    const res = await fetch(`${state.baseUrl}${path}`, {
+      method: options.method || "GET",
+      headers,
+      body: options.body,
+    });
+
+    const contentType = res.headers.get("content-type") || "";
+    const body = contentType.includes("application/json") ? await res.json() : await res.text();
+
+    if (res.status === 401 && allowRetry) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        return apiFetch(path, options, false);
+      }
+    }
+
+    if (!res.ok) {
+      const msg = body?.message || `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+
+    if (typeof body === "object" && body && body.success === false) {
+      throw new Error(body.message || "API 실패");
+    }
+
+    return body;
+  }
+
+  async function handleLogin() {
+    state.baseUrl = document.getElementById("baseUrl").value.trim();
+    const loginId = document.getElementById("loginId").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!state.baseUrl || !loginId || !password) {
+      alert("Base URL, 로그인 ID, 비밀번호를 입력하세요.");
+      return;
+    }
+
+    try {
+      log("로그인 요청", { loginId });
+      const res = await fetch(`${state.baseUrl}/api/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loginId, password }),
+      });
+      const body = await res.json();
+      if (!res.ok || !body?.success) {
+        throw new Error(body?.message || `HTTP ${res.status}`);
+      }
+
+      state.accessToken = body.data.accessToken;
+      state.refreshToken = body.data.refreshToken;
+      state.loginId = loginId;
+      saveSession();
+      syncSessionUI();
+
+      log("로그인 성공", {
+        loginId,
+        hasAccessToken: !!state.accessToken,
+        hasRefreshToken: !!state.refreshToken,
+      });
+    } catch (e) {
+      log("로그인 실패", { error: e.message });
+      alert(`로그인 실패: ${e.message}`);
+    }
+  }
+
+  function addItemRow(menuId = "", quantity = 1) {
+    const box = document.getElementById("itemsBox");
+    const wrapper = document.createElement("div");
+    wrapper.className = "item-row";
+    wrapper.innerHTML = `
+      <div class="row">
+        <label>menuId
+          <input class="item-menu-id" placeholder="UUID" value="${menuId}" />
+        </label>
+        <label>quantity
+          <input class="item-quantity" type="number" min="1" value="${quantity}" />
+        </label>
+      </div>
+      <div class="actions">
+        <button type="button" class="danger btn-remove-item">삭제</button>
+      </div>
+    `;
+    wrapper.querySelector(".btn-remove-item").addEventListener("click", () => wrapper.remove());
+    box.appendChild(wrapper);
+  }
+
+  function collectItems() {
+    const rows = [...document.querySelectorAll("#itemsBox .item-row")];
+    const items = rows.map((row) => ({
+      menuId: row.querySelector(".item-menu-id").value.trim(),
+      quantity: Number(row.querySelector(".item-quantity").value),
+    }));
+
+    if (items.length === 0) {
+      throw new Error("items를 1개 이상 입력하세요.");
+    }
+    for (const item of items) {
+      if (!item.menuId) throw new Error("menuId를 입력하세요.");
+      if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+        throw new Error("quantity는 1 이상의 정수여야 합니다.");
+      }
+    }
+    return items;
+  }
+
+  function setResult(id, body) {
+    document.getElementById(id).textContent = JSON.stringify(body, null, 2);
+  }
+
+  function shortId(id) {
+    if (!id) return "-";
+    return `${id.slice(0, 8)}...`;
+  }
+
+  function renderScheduleTable(listBody) {
+    const tbody = document.getElementById("scheduleTbody");
+    tbody.innerHTML = "";
+
+    const schedules = listBody?.data?.schedules || [];
+    if (!schedules.length) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="6" class="muted">조회된 스케줄이 없습니다.</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+
+    for (const s of schedules) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td title="${s.scheduleId}">${shortId(s.scheduleId)}</td>
+        <td>${s.status}</td>
+        <td>${s.startAt || "-"}</td>
+        <td>${s.expireAt || "-"}</td>
+        <td>visit=${s.visitAvailableMinutes}, sale=${s.saleDelayMinutes}</td>
+        <td>
+          <div class="actions">
+            <button type="button" class="secondary btn-detail">상세</button>
+            <button type="button" class="warn btn-publish">즉시게시</button>
+            <button type="button" class="danger btn-cancel">취소</button>
+          </div>
+        </td>
+      `;
+
+      tr.querySelector(".btn-detail").addEventListener("click", () => {
+        document.getElementById("manualScheduleId").value = s.scheduleId;
+        runDetail();
+      });
+      tr.querySelector(".btn-publish").addEventListener("click", () => {
+        document.getElementById("manualScheduleId").value = s.scheduleId;
+        runPublishNow();
+      });
+      tr.querySelector(".btn-cancel").addEventListener("click", () => {
+        document.getElementById("manualScheduleId").value = s.scheduleId;
+        runCancel();
+      });
+
+      tbody.appendChild(tr);
+    }
+  }
+
+  async function runPresetGet() {
+    try {
+      const body = await apiFetch(`/api/v1/owner/no-show-presets/default`);
+      setResult("presetResult", body);
+      const d = body.data;
+      if (d) {
+        document.getElementById("schedulePresetId").value = d.presetId || "";
+        document.getElementById("presetName").value = d.name ?? "기본";
+        document.getElementById("discountPercent").value = d.discountPercent ?? 40;
+        document.getElementById("visitAvailableMinutes").value = d.visitAvailableMinutes ?? 30;
+        document.getElementById("saleDelayMinutes").value = d.saleDelayMinutes ?? 30;
+      }
+      log("기본 프리셋 조회 성공", body);
+    } catch (e) {
+      log("기본 프리셋 조회 실패", { error: e.message });
+      alert(e.message);
+    }
+  }
+
+  async function runPresetPut() {
+    const payload = {
+      name: document.getElementById("presetName").value.trim(),
+      discountPercent: Number(document.getElementById("discountPercent").value),
+      visitAvailableMinutes: Number(document.getElementById("visitAvailableMinutes").value),
+      saleDelayMinutes: Number(document.getElementById("saleDelayMinutes").value),
+    };
+
+    try {
+      log("기본 프리셋 저장 요청", payload);
+      const body = await apiFetch(`/api/v1/owner/no-show-presets/default`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+      setResult("presetResult", body);
+      if (body?.data?.presetId) {
+        document.getElementById("schedulePresetId").value = body.data.presetId;
+      }
+      log("기본 프리셋 저장 성공", body);
+    } catch (e) {
+      log("기본 프리셋 저장 실패", { error: e.message });
+      alert(e.message);
+    }
+  }
+
+  async function runMenuList() {
+    const page = Number(document.getElementById("menuPage").value || 0);
+    const size = Number(document.getElementById("menuSize").value || 20);
+    const keyword = document.getElementById("menuKeyword").value.trim();
+    const type = document.getElementById("menuType").value;
+    const effectiveStatus = document.getElementById("menuEffectiveStatus").value;
+    const query = new URLSearchParams({ page: String(page), size: String(size) });
+    if (keyword) query.set("keyword", keyword);
+    if (type) query.set("type", type);
+    if (effectiveStatus) query.set("effectiveStatus", effectiveStatus);
+    try {
+      const body = await apiFetch(`/api/v1/owner/menus?${query.toString()}`);
+      setResult("menuResult", body);
+      log("메뉴 목록 조회 성공", body);
+    } catch (e) {
+      log("메뉴 목록 조회 실패", { error: e.message });
+      alert(e.message);
+    }
+  }
+
+  async function runCreateSchedule() {
+    try {
+      const presetIdRaw = document.getElementById("schedulePresetId").value.trim();
+      const payload = { items: collectItems() };
+      if (presetIdRaw) payload.presetId = presetIdRaw;
+
+      log("스케줄 생성 요청", payload);
+      const body = await apiFetch(`/api/v1/owner/no-show-post-schedules`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      setResult("createResult", body);
+      if (body?.data?.scheduleId) {
+        document.getElementById("manualScheduleId").value = body.data.scheduleId;
+      }
+      log("스케줄 생성 성공", body);
+    } catch (e) {
+      log("스케줄 생성 실패", { error: e.message });
+      alert(e.message);
+    }
+  }
+
+  async function runListSchedule() {
+    const page = Number(document.getElementById("listPage").value || 0);
+    const size = Number(document.getElementById("listSize").value || 10);
+    const status = document.getElementById("listStatus").value;
+    const query = new URLSearchParams({ page: String(page), size: String(size) });
+    if (status) query.set("status", status);
+
+    try {
+      const body = await apiFetch(`/api/v1/owner/no-show-post-schedules?${query.toString()}`);
+      renderScheduleTable(body);
+      log("스케줄 목록 조회 성공", body);
+    } catch (e) {
+      log("스케줄 목록 조회 실패", { error: e.message });
+      alert(e.message);
+    }
+  }
+
+  function getScheduleIdOrThrow() {
+    const id = document.getElementById("manualScheduleId").value.trim();
+    if (!id) throw new Error("scheduleId를 입력하세요.");
+    return id;
+  }
+
+  async function runDetail() {
+    try {
+      const scheduleId = getScheduleIdOrThrow();
+      const body = await apiFetch(`/api/v1/owner/no-show-post-schedules/${scheduleId}`);
+      setResult("detailResult", body);
+      log("스케줄 상세 조회 성공", body);
+    } catch (e) {
+      log("스케줄 상세 조회 실패", { error: e.message });
+      alert(e.message);
+    }
+  }
+
+  async function runPublishNow() {
+    try {
+      const scheduleId = getScheduleIdOrThrow();
+      const body = await apiFetch(`/api/v1/owner/no-show-post-schedules/${scheduleId}/publish-now`, {
+        method: "POST",
+      });
+      setResult("detailResult", body);
+      log("즉시 게시 성공", body);
+      runListSchedule();
+    } catch (e) {
+      log("즉시 게시 실패", { error: e.message });
+      alert(e.message);
+    }
+  }
+
+  async function runCancel() {
+    try {
+      const scheduleId = getScheduleIdOrThrow();
+      const body = await apiFetch(`/api/v1/owner/no-show-post-schedules/${scheduleId}`, {
+        method: "DELETE",
+      });
+      setResult("detailResult", body);
+      log("스케줄 취소 성공", body);
+      runListSchedule();
+    } catch (e) {
+      log("스케줄 취소 실패", { error: e.message });
+      alert(e.message);
+    }
+  }
+
+  async function runPostList() {
+    const page = Number(document.getElementById("postPage").value || 0);
+    const size = Number(document.getElementById("postSize").value || 10);
+    const date = document.getElementById("postDate").value;
+
+    const query = new URLSearchParams({ page: String(page), size: String(size) });
+    if (date) query.set("date", date);
+
+    try {
+      const body = await apiFetch(`/api/v1/owner/no-show-posts?${query.toString()}`);
+      setResult("postResult", body);
+      log("노쇼 글 조회 성공", body);
+    } catch (e) {
+      log("노쇼 글 조회 실패", { error: e.message });
+      alert(e.message);
+    }
+  }
+
+  function bindEvents() {
+    document.getElementById("btnLogin").addEventListener("click", handleLogin);
+    document.getElementById("btnLogout").addEventListener("click", () => {
+      clearSession();
+      log("세션 초기화 완료");
+    });
+
+    document.getElementById("btnPresetGet").addEventListener("click", runPresetGet);
+    document.getElementById("btnPresetPut").addEventListener("click", runPresetPut);
+
+    document.getElementById("btnMenuList").addEventListener("click", runMenuList);
+
+    document.getElementById("btnAddItem").addEventListener("click", () => addItemRow());
+    document.getElementById("btnCreateSchedule").addEventListener("click", runCreateSchedule);
+
+    document.getElementById("btnListSchedule").addEventListener("click", runListSchedule);
+    document.getElementById("btnDetail").addEventListener("click", runDetail);
+    document.getElementById("btnPublishNow").addEventListener("click", runPublishNow);
+    document.getElementById("btnCancelSchedule").addEventListener("click", runCancel);
+
+    document.getElementById("btnPostList").addEventListener("click", runPostList);
+  }
+
+  function init() {
+    loadSession();
+    bindEvents();
+    syncSessionUI();
+    addItemRow();
+    log("페이지 초기화 완료");
+  }
+
+  init();
+</script>
+</body>
+</html>

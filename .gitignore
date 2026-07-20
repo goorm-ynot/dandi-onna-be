@@ -25,6 +25,7 @@ replay_pid*
 
 HELP.md
 .gradle
+.gradle-local/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -39,9 +40,12 @@ build/
 .springBeans
 .sts4-cache
 bin/
+!deploy/bin/
+!deploy/bin/*.sh
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
+src/main/resources/Se/dnadi-onna-firebase-adminsdk-fbsvc-ee0a54d831.json
 ### IntelliJ IDEA ###
 .idea
 *.iws
@@ -51,6 +55,7 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 *.env
+artifacts/perf/
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
@@ -61,4 +66,4 @@ application.yaml
 ### VS Code ###
 .vscode/
 
-/doc/**
+/.agent/**

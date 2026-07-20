@@ -1,0 +1,8 @@
+[Unit]
+Description=Restart dandionna only when it is already running
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -lc 'systemctl is-active --quiet dandionna.service && systemctl restart dandionna.service || true'

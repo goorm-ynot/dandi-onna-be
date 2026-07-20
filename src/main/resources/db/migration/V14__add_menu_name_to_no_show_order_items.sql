@@ -1,0 +1,2 @@
+ALTER TABLE no_show_order_items
+	ADD COLUMN IF NOT EXISTS menu_name TEXT NOT NULL DEFAULT '';

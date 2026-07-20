@@ -27,8 +27,8 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x gradlew
 
-      - name: Gradle build (compile + check)
-        run: ./gradlew clean build -x test
+      - name: Compile and build executable jar
+        run: ./gradlew clean compileJava compileTestJava bootJar --no-daemon
 
   test:
     needs: build
@@ -48,5 +48,5 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x gradlew
 
-      - name: Run focused unit tests
-        run: ./gradlew test --tests '*AuthServiceTest'
+      - name: Run full default test suite
+        run: ./gradlew test --no-daemon
