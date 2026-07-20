@@ -11,6 +11,11 @@
 - `CONTRIBUTING.md`와 PR 템플릿에 이슈·브랜치·커밋·검증·병합 공식 규칙 추가
 
 ### Changed
+- PR #45를 merge commit 방식으로 병합해 `main`과 `develop` 계보를 연결하고 동일 tree 기준선을 확립
+- `main` ruleset에 PR, `build`/`test`, 최신 base 검사, review thread 해결, merge commit 전용 병합, force push·삭제 차단 적용
+- 이슈 #46에서 과거 원격 브랜치 19개의 tip SHA와 통합 근거를 감사한 뒤 원격 브랜치를 `main`, `develop`으로 정리
+- `PORTFOLIO.md`와 저장소 문서의 공식 기준을 `main`, `develop`, `portfolio-baseline-2026-07` 태그로 통일
+- README와 성능 측정 문서의 개인 로컬 절대경로를 재사용 가능한 환경변수 기반 예시로 일반화
 - Gradle 로컬 wrapper 다운로드 캐시를 Git 추적에서 제거하고 `.gradle-local/` ignore 규칙 추가
 - 메뉴 이미지 업로드 토큰 검증 실패 시 Redis 잠금을 즉시 해제하도록 보완
 - 현재 구현에 맞춰 메뉴 이미지 임시 업로드 컨트롤러와 API 경로를 아키텍처 문서에 반영

@@ -1,8 +1,10 @@
 # Dandi-Onna - 노쇼 재고 손실을 판매 기회로 전환하는 O2O 예약·주문 플랫폼
 
 > - 이 문서는 단디온나 백엔드에서 담당한 구현 범위와 기술적 기여를 정리한 문서입니다.
-> - 기준 브랜치 `feat/38-menu-domain-expansion`
-> - 문서 브랜치 `docs/dandi-onna-portfolio`
+> - 공식 기준 브랜치 `main`
+> - 개발 통합 브랜치 `develop`
+> - 검증 기준 태그 `portfolio-baseline-2026-07`
+> - 최종 기준선 검증일 `2026-07-20`
 
 ## 1. 프로젝트 개요
 
@@ -16,7 +18,8 @@
 | 팀명 | TEAM Ynot? |
 | 역할 | 백엔드 단독 개발자 |
 | 주요 담당 | 인증/인가, 매장/메뉴, 노쇼 게시글, 예약 게시, 주문, 알림, 매출 조회·엑셀 export, 운영/성능 측정 |
-| 기준 브랜치 | `feat/38-menu-domain-expansion` |
+| 공식 기준선 | `main` / `portfolio-baseline-2026-07` |
+| 개발 통합 브랜치 | `develop` |
 | Repository | https://github.com/goorm-ynot/dandi-onna-be |
 
 ## 2. 담당 역할 요약
