@@ -102,33 +102,38 @@ export MINIO_SECRET_KEY=change-me
 성능 측정은 `k6 + Docker` 기준으로 통일되어 있습니다. 자세한 기준과 해석 방법은 [doc/performance-measurement-plan.md](doc/performance-measurement-plan.md)를 기준 문서로 사용합니다.
 
 ```bash
-# 1) 성능 측정용 env 준비
-cd /home/rua/Project/dandi/v1/dandi-onna-be
+# 1) 백엔드 저장소 준비
+git clone https://github.com/goorm-ynot/dandi-onna-be.git
+cd dandi-onna-be
+export DANDI_BACKEND_DIR="$PWD"
+
+# 2) 성능 측정용 env 준비
 cp env/perf.local.env.example env/perf.local.env
 
-# 2) env/perf.local.env 값을 현재 머신 기준으로 수정
+# 3) env/perf.local.env 값을 현재 머신 기준으로 수정
 #    - DATABASE/REDIS/MINIO/JWE/FIREBASE 경로
 #    - SERVER_PORT=18080
 #    - MINIO_PUBLIC_ENDPOINT=http://host.docker.internal:19090
 
-# 3) Infra 실행
-cd /home/rua/Project/dandi/Infra
+# 4) 별도 Infra 저장소 실행
+export DANDI_INFRA_DIR=/path/to/dandi-infra
+cd "$DANDI_INFRA_DIR"
 ./infra.sh start
 
-# 4) 앱 실행
-cd /home/rua/Project/dandi/v1/dandi-onna-be
+# 5) 앱 실행
+cd "$DANDI_BACKEND_DIR"
 ./scripts/perf/run-app.sh
 
-# 5) 상태 확인
+# 6) 상태 확인
 ./scripts/perf/check-stack.sh
 
-# 6) 벤치마크용 데이터셋 적용
+# 7) 벤치마크용 데이터셋 적용
 ./scripts/perf/apply-seed.sh small
 
-# 7) 필수 smoke 실행
+# 8) 필수 smoke 실행
 ./scripts/perf/run-required.sh smoke
 
-# 8) 필수 measure 실행
+# 9) 필수 measure 실행
 ./scripts/perf/run-required.sh measure
 ```
 
@@ -159,10 +164,10 @@ cd /home/rua/Project/dandi/v1/dandi-onna-be
 
 ## 테스트
 
-기준 브랜치에서 다음 테스트 결과를 확인했습니다.
+공식 기준 브랜치 `main`과 포트폴리오 태그 `portfolio-baseline-2026-07`에서 다음 테스트 결과를 확인했습니다.
 
 ```text
-./gradlew test --no-daemon
+./gradlew clean test bootJar --no-daemon --console=plain
 59 tests, 0 failures, 0 errors, 2 skipped
 ```
 

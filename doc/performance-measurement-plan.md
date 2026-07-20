@@ -69,10 +69,11 @@
 
 ### 4-1. Infra
 
-인프라 루트는 `/home/rua/Project/dandi/Infra` 이다.
+PostgreSQL, Redis, MinIO와 관측 도구는 별도 Infra 저장소를 사용한다. 로컬 경로를 고정하지 않고 환경변수로 지정한다.
 
 ```bash
-cd /home/rua/Project/dandi/Infra
+export DANDI_INFRA_DIR=/path/to/dandi-infra
+cd "$DANDI_INFRA_DIR"
 ./infra.sh start
 ```
 
@@ -88,7 +89,9 @@ cd /home/rua/Project/dandi/Infra
 앱은 Docker가 아니라 호스트에서 실행한다. Docker는 Infra 와 k6 실행에만 사용한다.
 
 ```bash
-cd /home/rua/Project/dandi/v1/dandi-onna-be
+git clone https://github.com/goorm-ynot/dandi-onna-be.git
+cd dandi-onna-be
+export DANDI_BACKEND_DIR="$PWD"
 cp env/perf.local.env.example env/perf.local.env
 
 # env/perf.local.env 수정
