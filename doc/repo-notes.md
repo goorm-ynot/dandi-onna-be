@@ -6,12 +6,13 @@
 
 | 구분 | 내용 |
 |---|---|
-| 기준 구현 브랜치 | `feat/38-menu-domain-expansion` |
-| 문서 브랜치 | `docs/dandi-onna-portfolio` |
-| 기본 브랜치 | `main` |
+| 공식 기준 브랜치 | `main` |
+| 개발 통합 브랜치 | `develop` |
+| 검증 기준 태그 | `portfolio-baseline-2026-07` |
+| 최종 기준선 검증일 | `2026-07-20` |
 | 저장소 | `goorm-ynot/dandi-onna-be` |
 
-`docs/dandi-onna-portfolio` 브랜치는 `feat/38-menu-domain-expansion`의 구현 상태를 기준으로 문서화했습니다.
+`main`은 공개·포트폴리오 기준선이고 `develop`은 후속 개발 통합 브랜치입니다. `portfolio-baseline-2026-07` 태그는 이 문서 정리까지 반영된 최종 `main`을 고정합니다.
 
 ## 2. 프로젝트 기간 기준
 
@@ -62,14 +63,14 @@
 
 ## 5. 주요 커밋
 
-기준 브랜치에서 문서화 근거로 사용한 최근 주요 커밋입니다.
+현재 기준선 형성에 사용한 최근 주요 커밋입니다.
 
 ```text
-9dfe327 설정: CORS 및 인프라 테스트 조건 정리
-cd963c2 기능: 메뉴 도메인 확장 및 노쇼 게시 연동 정리
-d0a8e8c 개선: 비동기 워커 종료 처리 안정화
-2becd24 기능: 날짜 파싱 및 매출 내보내기 기준 정리
-924745c 문서: 운영 및 성능 측정 실행 자산 정리
+7a2eb61 main과 develop 계보 정합화 및 main 기준선 형성 (#45)
+bf853ad Gradle 로컬 캐시 추적 제거 (#43)
+889b8c8 feat/38·feat/39 및 문서 작업 복구 통합 (#41)
+7b3e724 보안·인가·토큰·운영·관측 리팩터링 (#36)
+ec78594 AS-IS/TO-BE 아키텍처 시각화 문서 추가 (#35)
 ```
 
 ## 6. 검토 순서
@@ -95,10 +96,10 @@ d0a8e8c 개선: 비동기 워커 종료 처리 안정화
 
 ## 7. 테스트 기준
 
-기준 브랜치에서 다음 테스트 결과를 확인했습니다.
+공식 기준 브랜치와 포트폴리오 태그에서 다음 테스트 결과를 확인했습니다.
 
 ```text
-./gradlew test --no-daemon
+./gradlew clean test bootJar --no-daemon --console=plain
 59 tests, 0 failures, 0 errors, 2 skipped
 ```
 
